@@ -1,0 +1,29 @@
+[project]
+name = "ticketdesk"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "VinhNguyenUTE", email = "valtriek99@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "django>=6.1.2",
+    "djangorestframework>=3.18.3",
+    "psycopg[binary]>=3.3.6",
+]
+
+[project.scripts]
+ticketdesk = "ticketdesk:main"
+
+[build-system]
+requires = ["uv_build>=0.13.1,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.7.0",
+    "pytest>=9.1.1",
+    "pytest-django>=4.14.0",
+    "ruff>=0.17.1",
+]
