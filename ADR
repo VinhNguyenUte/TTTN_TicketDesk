@@ -1,0 +1,16 @@
+# ADR-001: Dùng PostgreSQL thay vì MySQL
+Ngày: 2026-10-20 · Trạng thái: Đã chấp nhận
+Bối cảnh: Cần full-text search tiếng Việt, JSONField, team đã quen PostgreSQL.
+Quyết định: Dùng PostgreSQL 16 chạy bằng Docker.
+Hệ quả: + Dùng được SearchVector, JSONField. − Thành viên mới cần học psql.
+
+#ADR-002: Lựa chọn Celery & Redis xử lý tác vụ bất đồng bộ và kiểm tra SLA
+Ngày: 2026-10-21 · Trạng thái: Đã chấp nhận
+Bối cảnh:
+Hệ thống cần gửi email thông báo khi ticket tạo/đổi trạng thái mà không làm chậm HTTP response. Đồng thời, cần một cơ chế quét định kỳ tự động để phát hiện các ticket có nguy cơ hoặc đã quá hạn SLA.
+Quyết định:
+Sử dụng Celery làm Task Queue kết hợp Redis làm Message Broker/Result Backend, khởi chạy cùng Celery Beat trong môi trường Docker.
+Hệ quả:
++ Giải phóng tiến trình HTTP chính, giúp API trả về phản hồi tức thì cho người dùng.
++ Hỗ trợ lập lịch tác vụ định kỳ đơn giản để tự động hóa việc kiểm tra SLA.
+− Tăng độ phức tạp của hạ tầng.
