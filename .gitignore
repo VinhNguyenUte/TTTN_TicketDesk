@@ -11,3 +11,9 @@ wheels/
 
 #db ignore
 .sqlite3
+
+# GitHub workflows
+.github/
+
+# Test and coverage reports
+.pytest_cache/
