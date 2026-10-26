@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Ticket #{{ ticket.pk }} - {{ ticket.title }}{% endblock %}
+
+{% block content %}
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+    <div>
+      <a href="{% url 'tickets:list' %}" style="text-decoration: none; color: #64748b; font-size: 0.9rem;">&larr; Quay lại danh sách</a>
+      <h1 style="margin: 8px 0;">#{{ ticket.pk }} - {{ ticket.title }}</h1>
+    </div>
+    <div>
+      {% if ticket.status == 'new' and request.user == ticket.customer or request.user.role != 'customer' %}
+        <a href="{% url 'tickets:update' ticket.pk %}" style="background: #e2e8f0; color: #1e293b; padding: 6px 12px; border-radius: 4px; text-decoration: none; margin-right: 8px;">Chỉnh sửa</a>
+        <a href="{% url 'tickets:delete' ticket.pk %}" style="background: #fee2e2; color: #dc2626; padding: 6px 12px; border-radius: 4px; text-decoration: none;">Xoá</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+    <!-- Cột trái: Chi tiết & Bình luận -->
+    <div>
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+        <h3 style="margin-top: 0; color: #334155;">Mô tả yêu cầu</h3>
+        <p style="white-space: pre-wrap; line-height: 1.6;">{{ ticket.description }}</p>
+
+        {% if attachments %}
+          <h4 style="margin-bottom: 8px;">Tệp đính kèm:</h4>
+          <ul style="padding-left: 20px;">
+            {% for att in attachments %}
+              <li>
+                <a href="{{ att.file.url }}" target="_blank" style="color: #2563eb;">{{ att.file_name }}</a>
+                <span style="color: #64748b; font-size: 0.8rem;">({{ att.file_size }} bytes)</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+
+      <!-- Bình luận & Trao đổi -->
+      <h3>Bình luận & Phản hồi ({{ comments.count }})</h3>
+      <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
+        {% for comment in comments %}
+          <div style="border: 1px solid {% if comment.is_internal %}#fde68a; background: #fefce8;{% else %}#e2e8f0; background: #fff;{% endif %} border-radius: 8px; padding: 12px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #64748b; margin-bottom: 8px;">
+              <span>
+                <strong>{{ comment.user.username }}</strong> ({{ comment.user.get_role_display }})
+                {% if comment.is_internal %}
+                  <span style="background: #f59e0b; color: #fff; padding: 1px 6px; border-radius: 4px; font-size: 0.75rem; margin-left: 6px;">Nội bộ</span>
+                {% endif %}
+              </span>
+              <span>{{ comment.created_at|date:"d/m/Y H:i" }}</span>
+            </div>
+            <p style="margin: 0; white-space: pre-wrap; line-height: 1.5;">{{ comment.content }}</p>
+
+            {% for att in comment.attachments.all %}
+              <div style="margin-top: 8px; font-size: 0.85rem;">
+                📎 Đính kèm: <a href="{{ att.file.url }}" target="_blank" style="color: #2563eb;">{{ att.file_name }}</a>
+              </div>
+            {% endfor %}
+          </div>
+        {% empty %}
+          <p style="color: #64748b; font-style: italic;">Chưa có bình luận nào.</p>
+        {% endfor %}
+      </div>
+
+      <!-- Form gửi phản hồi -->
+      <div style="background: #f1f5f9; border-radius: 8px; padding: 16px;">
+        <h4 style="margin-top: 0;">Gửi phản hồi mới</h4>
+        <form action="{% url 'tickets:comment' ticket.pk %}" method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <textarea name="content" rows="4" style="width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;" placeholder="Nhập nội dung phản hồi..." required></textarea>
+          
+          <div style="margin: 12px 0; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <label style="font-size: 0.9rem;">Đính kèm tệp: </label>
+              <input type="file" name="attachment">
+            </div>
+            {% if request.user.role != 'customer' %}
+              <label style="font-size: 0.9rem; cursor: pointer; color: #b45309;">
+                <input type="checkbox" name="is_internal"> Ghi chú nội bộ (chỉ Agent/Manager thấy)
+              </label>
+            {% endif %}
+          </div>
+
+          <button type="submit" style="background: #2563eb; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Gửi phản hồi</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Cột phải: Thông tin tóm tắt & Lịch sử -->
+    <div>
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+        <h3 style="margin-top: 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">Thông tin Ticket</h3>
+        <p><strong>Trạng thái:</strong> 
+          <span style="background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 4px;">{{ ticket.get_status_display }}</span>
+        </p>
+        <p><strong>Độ ưu tiên:</strong> 
+          <span style="background: {{ ticket.priority.color|default:'#e2e8f0' }}; color: #fff; padding: 2px 8px; border-radius: 12px;">{{ ticket.priority.name }}</span>
+        </p>
+        <p><strong>Danh mục:</strong> {{ ticket.category.name }}</p>
+        <p><strong>Khách hàng:</strong> {{ ticket.customer.username }} ({{ ticket.customer.email }})</p>
+        <p><strong>Người phụ trách:</strong> {{ ticket.assigned_to.username|default:"Chưa phân công" }}</p>
+        <p><strong>Hạn SLA:</strong> {{ ticket.due_date|date:"d/m/Y H:i"|default:"Không có" }}</p>
+        {% if ticket.resolved_at %}
+          <p><strong>Ngày giải quyết:</strong> {{ ticket.resolved_at|date:"d/m/Y H:i" }}</p>
+        {% endif %}
+        <p><strong>Ngày tạo:</strong> {{ ticket.created_at|date:"d/m/Y H:i" }}</p>
+        <p><strong>Cập nhật:</strong> {{ ticket.updated_at|date:"d/m/Y H:i" }}</p>
+      </div>
+
+      <!-- Lịch sử Ticket -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;">
+        <h4 style="margin-top: 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">Lịch sử hoạt động</h4>
+        <ul style="padding-left: 18px; margin: 0; font-size: 0.85rem; color: #475569;">
+          {% for h in histories %}
+            <li style="margin-bottom: 8px;">
+              <strong>{{ h.action }}</strong> bởi {{ h.user.username|default:"Hệ thống" }}
+              <div style="color: #94a3b8; font-size: 0.75rem;">{{ h.created_at|date:"d/m/Y H:i:s" }}</div>
+            </li>
+          {% empty %}
+            <li>Chưa có lịch sử.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+{% endblock %}

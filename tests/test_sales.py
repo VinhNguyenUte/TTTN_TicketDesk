@@ -1,6 +1,7 @@
 from pathlib import Path
-import pytest
-from ticketdesk.sales import Sale, read_sales, summarize_sales, generate_report
+
+from ticketdesk.sales import Sale, generate_report, read_sales, summarize_sales
+
 
 def test_total():
     assert Sale("Bút", 2, 10.0).total == 20.0
@@ -8,7 +9,9 @@ def test_total():
 
 def test_skip_invalid_row(tmp_path: Path):
     f = tmp_path / "data.csv"
-    f.write_text("product,quantity,price\nBút,2,10\nVở,abc,5\nTẩy,3,invalid\n", encoding="utf-8")
+    f.write_text(
+        "product,quantity,price\nBút,2,10\nVở,abc,5\nTẩy,3,invalid\n", encoding="utf-8"
+    )
     sales = read_sales(f)
     assert len(sales) == 1
     assert sales[0].product == "Bút"
@@ -21,7 +24,7 @@ def test_summarize_sales():
         Sale("Vở", 1, 15.0),
     ]
     summary = summarize_sales(sales)
-    
+
     assert summary["Bút"]["total_quantity"] == 5
     assert summary["Bút"]["total_revenue"] == 50.0
     assert summary["Vở"]["total_revenue"] == 15.0

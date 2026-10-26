@@ -7,13 +7,19 @@ wheels/
 *.egg-info
 
 # Virtual environments
-.venv
+.venv/
 
-#db ignore
-.sqlite3
+# Database
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3.bak
+
+# Media files
+/media/
 
 # GitHub workflows
 .github/
 
 # Test and coverage reports
 .pytest_cache/
+.ruff_cache/
