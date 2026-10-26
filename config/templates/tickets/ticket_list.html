@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Danh sách Ticket - TicketDesk{% endblock %}
+
+{% block content %}
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <h1 style="margin: 0;">Danh sách Ticket</h1>
+      <p style="color: #64748b; margin-top: 4px;">
+        Xin chào <strong>{{ request.user.username }}</strong> 
+        (Vai trò: <span style="color: #2563eb;">{{ request.user.get_role_display }}</span>)
+      </p>
+    </div>
+    <div>
+      <a href="{% url 'tickets:create' %}" style="background: #2563eb; color: #fff; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 500;">+ Tạo Ticket mới</a>
+    </div>
+  </div>
+
+  <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+
+  <table style="width: 100%; border-collapse: collapse; text-align: left;">
+    <thead>
+      <tr style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1;">
+        <th style="padding: 10px;">ID</th>
+        <th style="padding: 10px;">Tiêu đề</th>
+        <th style="padding: 10px;">Danh mục</th>
+        <th style="padding: 10px;">Độ ưu tiên</th>
+        <th style="padding: 10px;">Trạng thái</th>
+        {% if request.user.role != 'customer' %}
+          <th style="padding: 10px;">Khách hàng</th>
+          <th style="padding: 10px;">Phụ trách</th>
+        {% endif %}
+        <th style="padding: 10px;">Ngày tạo</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ticket in ticket_list %}
+        <tr style="border-bottom: 1px solid #e2e8f0;">
+          <td style="padding: 10px; font-weight: bold;">#{{ ticket.pk }}</td>
+          <td style="padding: 10px;">
+            <a href="{% url 'tickets:detail' ticket.pk %}" style="color: #1e40af; text-decoration: none; font-weight: 600;">
+              {{ ticket.title }}
+            </a>
+          </td>
+          <td style="padding: 10px;">{{ ticket.category.name }}</td>
+          <td style="padding: 10px;">
+            <span style="background: {{ ticket.priority.color|default:'#e2e8f0' }}; color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 0.85rem;">
+              {{ ticket.priority.name }}
+            </span>
+          </td>
+          <td style="padding: 10px;">
+            <span style="padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; background: #e0f2fe; color: #0369a1;">
+              {{ ticket.get_status_display }}
+            </span>
+          </td>
+          {% if request.user.role != 'customer' %}
+            <td style="padding: 10px;">{{ ticket.customer.username }}</td>
+            <td style="padding: 10px;">{{ ticket.assigned_to.username|default:"Chưa phân công" }}</td>
+          {% endif %}
+          <td style="padding: 10px; color: #64748b; font-size: 0.85rem;">{{ ticket.created_at|date:"d/m/Y H:i" }}</td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="7" style="padding: 24px; text-align: center; color: #64748b;">
+            Không có ticket nào.
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Phân trang -->
+  {% if is_paginated %}
+    <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}">Trang trước</a>
+        {% endif %}
+      </div>
+      <span>Trang {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      <div>
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}">Trang sau</a>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

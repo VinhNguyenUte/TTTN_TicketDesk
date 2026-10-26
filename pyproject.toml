@@ -1,7 +1,7 @@
 [project]
 name = "ticketdesk"
 version = "0.1.0"
-description = "Add your description here"
+description = "System for receiving and processing internal support requests."
 readme = "README.md"
 authors = [
     { name = "VinhNguyenUTE", email = "valtriek99@gmail.com" }
@@ -16,10 +16,6 @@ dependencies = [
 [project.scripts]
 ticketdesk = "ticketdesk:main"
 
-[build-system]
-requires = ["uv_build>=0.13.1,<0.14.0"]
-build-backend = "uv_build"
-
 [dependency-groups]
 dev = [
     "pre-commit>=4.7.0",
@@ -27,3 +23,24 @@ dev = [
     "pytest-django>=4.14.0",
     "ruff>=0.17.1",
 ]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+exclude = [
+    ".git",
+    ".venv",
+    "**/migrations/*",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = [
+    "E501",
+    "RUF012",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"config/settings/*" = ["F403", "F405"]
+"**/migrations/*" = ["ALL"]
+
