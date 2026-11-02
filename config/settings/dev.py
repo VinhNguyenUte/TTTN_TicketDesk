@@ -1,18 +1,35 @@
+import os
+
 from .base import *  # noqa: F403
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-ddngjz*1#wg&a5$il3zwd5$8lrghtdu9dhi_=y!)30ms_f4(at"
+SECRET_KEY = os.getenv(
+    "DJANGO_SECRET_KEY",
+    "django-insecure-dev-ticketdesk-secret-key-123456",
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]
 
 # Database
+POSTGRES_DB = os.getenv("POSTGRES_DB", "ticketdesk")
+POSTGRES_USER = os.getenv("POSTGRES_USER", "ticketdesk_user")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "ticketdesk_pass")
+POSTGRES_HOST = os.getenv(
+    "POSTGRES_HOST", "localhost"
+)  # Mặc định localhost cho máy thật, trong Docker ghi đè thành 'db'
+POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
+
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",  # noqa: F405
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": POSTGRES_DB,
+        "USER": POSTGRES_USER,
+        "PASSWORD": POSTGRES_PASSWORD,
+        "HOST": POSTGRES_HOST,
+        "PORT": POSTGRES_PORT,
     }
 }
 

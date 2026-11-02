@@ -13,9 +13,6 @@ dependencies = [
     "psycopg[binary]>=3.3.6",
 ]
 
-[project.scripts]
-ticketdesk = "ticketdesk:main"
-
 [dependency-groups]
 dev = [
     "pre-commit>=4.7.0",
@@ -23,6 +20,10 @@ dev = [
     "pytest-django>=4.14.0",
     "ruff>=0.17.1",
 ]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
 
 [tool.ruff]
 line-length = 88

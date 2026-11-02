@@ -74,6 +74,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "config" / "templates" / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Media files (Attachments)
 MEDIA_URL = "/media/"
@@ -82,3 +83,6 @@ MEDIA_ROOT = BASE_DIR / "media"
 # Login and Logout URLs
 LOGIN_REDIRECT_URL = "/tickets/"
 LOGOUT_REDIRECT_URL = "/accounts/login/"
+
+# Default primary key field type
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
