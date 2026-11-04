@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Xác nhận xoá Ticket</h1>
+  <p>Bạn có chắc chắn muốn xoá ticket "{{ object.title }}" không?</p>
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit">Xác nhận xoá</button>
+    <a href="{% url 'tickets:detail' object.pk %}">Hủy</a>
+  </form>
+{% endblock %}

@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Báo cáo & Thống kê - TicketDesk{% endblock %}
+
+{% block content %}
+<style>
+  .stats-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 16px;
+  }
+  .stats-header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #0f172a;
+  }
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .kpi-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+  .kpi-card .number {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 8px 0;
+  }
+  .kpi-card .label {
+    font-size: 0.875rem;
+    color: #64748b;
+    font-weight: 500;
+  }
+  .kpi-total .number { color: #0284c7; }
+  .kpi-open .number { color: #ea580c; }
+  .kpi-resolved .number { color: #16a34a; }
+  .kpi-rate .number { color: #7c3aed; }
+
+  .section-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 768px) {
+    .section-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  .stats-panel {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 20px;
+  }
+  .stats-panel h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-size: 1.1rem;
+    color: #1e293b;
+    border-left: 4px solid #0284c7;
+    padding-left: 10px;
+  }
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+  .data-table th, .data-table td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .data-table th {
+    background-color: #f8fafc;
+    font-size: 0.85rem;
+    color: #475569;
+    font-weight: 600;
+  }
+  .badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .badge-new { background-color: #dbeafe; color: #1d4ed8; }
+  .badge-in_progress { background-color: #fef3c7; color: #b45309; }
+  .badge-resolved { background-color: #dcfce7; color: #15803d; }
+  .badge-closed { background-color: #f1f5f9; color: #475569; }
+  .progress-bar-bg {
+    background: #e2e8f0;
+    border-radius: 4px;
+    height: 8px;
+    width: 100%;
+    margin-top: 4px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: #0284c7;
+    border-radius: 4px;
+  }
+</style>
+
+<div class="stats-header">
+  <div>
+    <h1>Báo cáo & Thống kê Hoạt động</h1>
+    <p style="margin: 4px 0 0 0; color: #64748b; font-size: 0.9rem;">Tổng hợp dữ liệu theo QuerySet Aggregate & Annotate</p>
+  </div>
+  <div>
+    <a href="{% url 'tickets:list' %}" style="padding: 8px 16px; background:#f1f5f9; color:#334155; text-decoration:none; border-radius:6px; font-weight:500;">&larr; Về danh sách</a>
+  </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="kpi-grid">
+  <div class="kpi-card kpi-total">
+    <div class="label">TỔNG SỐ TICKET</div>
+    <div class="number">{{ total_tickets }}</div>
+  </div>
+  <div class="kpi-card kpi-open">
+    <div class="label">ĐANG MỞ (CHƯA ĐÓNG)</div>
+    <div class="number">{{ open_tickets }}</div>
+  </div>
+  <div class="kpi-card kpi-resolved">
+    <div class="label">ĐÃ XỬ LÝ / ĐÃ ĐÓNG</div>
+    <div class="number">{{ resolved_tickets }}</div>
+  </div>
+  <div class="kpi-card kpi-rate">
+    <div class="label">TỶ LỆ GIẢI QUYẾT</div>
+    <div class="number">{{ resolution_rate }}%</div>
+  </div>
+</div>
+
+<div class="section-grid">
+  <!-- Thống kê theo Trạng thái -->
+  <div class="stats-panel">
+    <h3>Theo trạng thái Ticket</h3>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Trạng thái</th>
+          <th style="text-align: right;">Số lượng</th>
+          <th style="width: 40%;">Tỷ lệ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for st in status_stats %}
+        <tr>
+          <td>
+            <span class="badge badge-{{ st.value }}">{{ st.label }}</span>
+          </td>
+          <td style="text-align: right; font-weight: 600;">{{ st.count }}</td>
+          <td>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" style="width: {% if total_tickets > 0 %}{% widthratio st.count total_tickets 100 %}{% else %}0{% endif %}%;"></div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Thống kê theo Danh mục -->
+  <div class="stats-panel">
+    <h3>Theo danh mục sự cố</h3>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Danh mục</th>
+          <th style="text-align: right;">Số ticket</th>
+          <th style="width: 40%;">Tỷ lệ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cat in category_stats %}
+        <tr>
+          <td><strong>{{ cat.name }}</strong></td>
+          <td style="text-align: right; font-weight: 600;">{{ cat.ticket_count }}</td>
+          <td>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" style="background:#8b5cf6; width: {% if total_tickets > 0 %}{% widthratio cat.ticket_count total_tickets 100 %}{% else %}0{% endif %}%;"></div>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="3" style="text-align:center; color:#94a3b8;">Chưa có danh mục nào</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Thống kê theo Nhân viên xử lý (Agent) -->
+<div class="stats-panel">
+  <h3>Phân bổ & Tải công việc theo Nhân viên (Agent)</h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Nhân viên hỗ trợ</th>
+        <th>Email</th>
+        <th style="text-align: center;">Đang xử lý (Mở)</th>
+        <th style="text-align: center;">Đã đóng (Closed)</th>
+        <th style="text-align: center;">Tổng số được giao</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ag in agent_stats %}
+      <tr>
+        <td>
+          <strong>{{ ag.get_full_name|default:ag.username }}</strong>
+          <span style="font-size:0.75rem; color:#64748b; margin-left:6px;">@{{ ag.username }}</span>
+        </td>
+        <td>{{ ag.email }}</td>
+        <td style="text-align: center;">
+          <span style="padding: 2px 8px; border-radius: 4px; background: {% if ag.open_count > 0 %}#fee2e2; color:#b91c1c; font-weight:600;{% else %}#f1f5f9; color:#64748b;{% endif %}">
+            {{ ag.open_count }}
+          </span>
+        </td>
+        <td style="text-align: center;">
+          <span style="padding: 2px 8px; border-radius: 4px; background: #ecfdf5; color:#047857;">
+            {{ ag.closed_count }}
+          </span>
+        </td>
+        <td style="text-align: center; font-weight: 700;">{{ ag.total_assigned }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5" style="text-align: center; color: #94a3b8;">Chưa có nhân viên Agent nào trong hệ thống.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+

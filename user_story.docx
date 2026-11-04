@@ -1,0 +1,431 @@
+Stakeholder và phạm vi
+    Người dùng: khách hàng gửi yêu cầu, nhân viên hỗ trợ xử lý, quản lý theo dõi.
+    Ra quyết định: trưởng bộ phận hỗ trợ (mentor đóng vai).
+    Ngoài phạm vi MVP: chat trực tiếp, app di động, tích hợp tổng đài.
+User Story
+1. Danh sách User Story
+Cấu trúc sử dụng:
+Là một [vai trò], tôi muốn [chức năng], để [mục đích/lợi ích].
+
+ID	    User Story	Độ ưu tiên
+US01	Là người dùng, tôi muốn đăng ký, đăng nhập và đăng xuất khỏi hệ thống để sử dụng các chức năng theo tài khoản của mình.
+US02	Là quản lý, tôi muốn quản lý tài khoản và phân quyền cho khách hàng, nhân viên hỗ trợ và quản lý để đảm bảo mỗi người chỉ truy cập các chức năng được phép.
+US03	Là khách hàng, tôi muốn tạo ticket bằng cách nhập tiêu đề, mô tả, mức độ ưu tiên và danh mục để gửi yêu cầu hỗ trợ đến bộ phận phụ trách.
+US04	Là khách hàng, tôi muốn xem danh sách và chi tiết các ticket do mình tạo để theo dõi tiến độ xử lý yêu cầu.
+US05	Là khách hàng, tôi muốn bổ sung bình luận và file đính kèm vào ticket để cung cấp thêm thông tin cho nhân viên hỗ trợ.
+US06	Là nhân viên hỗ trợ, tôi muốn xem danh sách ticket được giao hoặc chưa có người xử lý để chủ động tiếp nhận công việc.
+US07	Là quản lý, tôi muốn phân công hoặc chuyển ticket cho nhân viên hỗ trợ để phân phối công việc hợp lý.
+US08	Là nhân viên hỗ trợ, tôi muốn cập nhật trạng thái ticket để phản ánh chính xác tiến độ xử lý yêu cầu.
+US09	Là người dùng, tôi muốn xem lịch sử thay đổi của ticket để biết ai đã thực hiện thay đổi và thay đổi được thực hiện khi nào.
+US10	Là người dùng, tôi muốn nhận thông báo qua email khi ticket được tạo, phân công, bình luận hoặc thay đổi trạng thái để kịp thời nắm bắt thông tin.
+US11	Là quản lý, tôi muốn xem dashboard thống kê ticket theo trạng thái, nhân viên xử lý và thời gian xử lý để đánh giá hiệu quả hoạt động hỗ trợ.
+US12	Là quản lý, tôi muốn theo dõi SLA của ticket để phát hiện các yêu cầu có nguy cơ quá hạn hoặc đã quá hạn xử lý.
+US13	Là quản lý, tôi muốn xuất báo cáo thống kê ticket ra file Excel để phục vụ tổng hợp và phân tích dữ liệu.
+US14	Là người dùng, tôi muốn tìm kiếm, lọc và phân trang danh sách ticket để nhanh chóng tìm được yêu cầu cần xem hoặc xử lý.
+US15	Là lập trình viên tích hợp hệ thống, tôi muốn sử dụng REST API có xác thực JWT, phân quyền và tài liệu Swagger để tích hợp, kiểm thử và khai thác các chức năng của TicketDesk.
+2. Acceptance Criteria cho các User Story quan trọng
+US03 – Tạo ticket
+- Người dùng đã đăng nhập và có quyền tạo ticket.
+- Hệ thống yêu cầu nhập tiêu đề, mô tả và các trường bắt buộc.
+- Người dùng có thể chọn danh mục và mức độ ưu tiên.
+- Khi dữ liệu hợp lệ, hệ thống tạo ticket với mã định danh duy nhất và trạng thái ban đầu là Open.
+- Khi dữ liệu không hợp lệ, hệ thống trả về thông báo lỗi phù hợp.
+US07 – Phân công ticket
+- Quản lý có thể chọn ticket và nhân viên hỗ trợ cần phân công.
+- Chỉ tài khoản có vai trò nhân viên hỗ trợ đang hoạt động mới được phân công.
+- Khi phân công thành công, hệ thống cập nhật người xử lý.
+- Hệ thống ghi lại lịch sử phân công và gửi thông báo theo cấu hình.
+US08 – Cập nhật trạng thái ticket
+- Người dùng chỉ được thay đổi trạng thái khi có quyền phù hợp.
+- Hệ thống kiểm tra trạng thái hiện tại và trạng thái đích có hợp lệ theo quy trình hay không.
+- Khi cập nhật thành công, trạng thái mới được lưu và lịch sử thay đổi được ghi nhận.
+- Các thay đổi cần thông báo sẽ được đưa vào hàng đợi gửi email.
+US10 – Thông báo email
+- Hệ thống xác định người nhận theo sự kiện của ticket.
+- Email được xử lý nền thông qua Celery để không làm chậm thao tác chính.
+- Nếu gửi email thất bại, hệ thống ghi nhận lỗi và hỗ trợ thử lại theo cấu hình.
+- Người dùng nhận được thông tin ticket và sự kiện vừa xảy ra trong email.
+US12 – Theo dõi SLA
+- Quản lý có thể cấu hình thời hạn xử lý theo mức độ ưu tiên hoặc danh mục.
+- Hệ thống tính thời gian xử lý dựa trên mốc thời gian và quy tắc SLA đã cấu hình.
+- Dashboard phân biệt ticket còn hạn, sắp quá hạn và quá hạn.
+- Các trường hợp tạm dừng SLA, nếu có, phải tuân theo quy tắc nghiệp vụ được xác định trước.
+US13 – Xuất báo cáo Excel
+- Quản lý có thể chọn khoảng thời gian và các điều kiện lọc báo cáo.
+- Hệ thống tạo tác vụ xuất Excel chạy nền.
+- Người dùng có thể theo dõi trạng thái tác vụ: đang xử lý, hoàn thành hoặc thất bại.
+- Khi hoàn thành, người dùng được cung cấp liên kết tải file và chỉ người có quyền mới được tải.
+3. Luồng trạng thái ticket đề xuất
+Open -> Ticket mới được tạo 
+-> In Progress -> Đang được nhân viên xử lý -> Resolved 
+-> Đã có phương án giải quyết -> Closed -> Yêu cầu đã được đóng
+
+Tiêu chí nghiệm thu dạng Given / When / Then
+1. US01 – Đăng nhập, đăng xuất
+Story: Là người dùng, tôi muốn đăng nhập và đăng xuất khỏi hệ thống để sử dụng các chức năng theo tài khoản của mình.
+Kịch bản 1: Đăng nhập thành công
+- Given người dùng có tài khoản hợp lệ với tên đăng nhập nguyenvana và mật khẩu chính xác
+- When người dùng nhập thông tin và nhấn Đăng nhập
+- Then hệ thống xác thực thành công
+- And chuyển người dùng đến trang phù hợp với vai trò
+Kịch bản 2: Đăng nhập sai mật khẩu
+- Given tài khoản nguyenvana tồn tại trong hệ thống
+- When người dùng nhập đúng tên đăng nhập nhưng sai mật khẩu
+- Then hệ thống thông báo thông tin đăng nhập không chính xác
+- And không cấp quyền truy cập
+Kịch bản 3: Đăng nhập với tài khoản không tồn tại
+- Given tên đăng nhập user999 chưa được đăng ký
+- When người dùng nhập thông tin đăng nhập của user999
+- Then hệ thống thông báo thông tin đăng nhập không chính xác
+- And không tạo phiên đăng nhập
+Kịch bản 4: Đăng xuất thành công
+- Given người dùng đang đăng nhập vào hệ thống
+- When người dùng nhấn Đăng xuất
+- Then hệ thống kết thúc phiên đăng nhập
+- And người dùng được chuyển đến trang đăng nhập
+- And không thể tiếp tục truy cập trang yêu cầu xác thực bằng phiên cũ
+2. US02 – Quản lý tài khoản và phân quyền
+Story: Là quản lý, tôi muốn quản lý tài khoản và phân quyền để mỗi người chỉ truy cập các chức năng được phép.
+Kịch bản 1: Tạo tài khoản nhân viên thành công
+- Given quản lý đã đăng nhập và có quyền quản lý tài khoản
+- When quản lý tạo tài khoản nhanvien01 với thông tin hợp lệ và vai trò Nhân viên hỗ trợ
+- Then hệ thống tạo tài khoản thành công
+- And tài khoản được gán đúng vai trò
+Kịch bản 2: Tạo tài khoản với tên đăng nhập đã tồn tại
+- Given tài khoản nhanvien01 đã tồn tại
+- When quản lý tạo tài khoản mới với tên đăng nhập nhanvien01
+- Then hệ thống thông báo tên đăng nhập đã tồn tại
+- And không tạo tài khoản trùng lặp
+Kịch bản 3: Nhân viên truy cập chức năng chỉ dành cho quản lý
+- Given nhanvien01 đã đăng nhập với vai trò Nhân viên hỗ trợ
+- When nhân viên truy cập chức năng phân quyền tài khoản
+- Then hệ thống từ chối truy cập
+- And dữ liệu phân quyền không bị thay đổi
+Kịch bản 4: Khóa tài khoản thành công
+- Given tài khoản nhanvien01 đang hoạt động
+- When quản lý khóa tài khoản
+- Then hệ thống cập nhật trạng thái tài khoản thành bị khóa
+- And tài khoản không thể đăng nhập mới
+3. US03 – Tạo ticket
+Story: Là khách hàng, tôi muốn tạo ticket để gửi yêu cầu hỗ trợ đến bộ phận phụ trách.
+Kịch bản 1: Tạo ticket thành công
+- Given khách hàng đã đăng nhập
+- When khách hàng nhập tiêu đề, mô tả, danh mục và mức độ ưu tiên hợp lệ rồi nhấn Tạo ticket
+- Then hệ thống tạo ticket với mã định danh duy nhất
+- And trạng thái ban đầu là Mới
+- And ticket được lưu vào hệ thống
+Kịch bản 2: Tạo ticket thiếu tiêu đề
+- Given khách hàng đang ở trang tạo ticket
+- When khách hàng để trống tiêu đề và gửi yêu cầu
+- Then hệ thống thông báo tiêu đề là trường bắt buộc
+- And ticket không được tạo
+Kịch bản 3: Tạo ticket với mô tả vượt giới hạn
+- Given hệ thống quy định độ dài tối đa của mô tả ticket
+- When khách hàng nhập mô tả vượt quá giới hạn và gửi yêu cầu
+- Then hệ thống thông báo mô tả không hợp lệ
+- And không lưu ticket mới
+Kịch bản 4: Tạo ticket khi chưa đăng nhập
+- Given người dùng chưa đăng nhập
+- When người dùng gửi yêu cầu tạo ticket
+- Then hệ thống từ chối yêu cầu
+- And yêu cầu đăng nhập trước khi tiếp tục
+4. US04 – Xem danh sách và chi tiết ticket
+Story: Là khách hàng, tôi muốn xem các ticket do mình tạo để theo dõi tiến độ xử lý.
+Kịch bản 1: Xem danh sách ticket thành công
+- Given khách hàng đã đăng nhập và có 3 ticket đã tạo
+- When khách hàng mở trang danh sách ticket
+- Then hệ thống hiển thị 3 ticket thuộc khách hàng đó
+- And mỗi ticket hiển thị mã, tiêu đề, trạng thái và thời gian tạo
+Kịch bản 2: Xem chi tiết ticket của mình
+- Given ticket TD-42 thuộc về khách hàng đang đăng nhập
+- When khách hàng mở chi tiết TD-42
+- Then hệ thống hiển thị mô tả, người xử lý, trạng thái và lịch sử liên quan
+Kịch bản 3: Truy cập ticket của người khác
+- Given ticket TD-43 thuộc về khách hàng A
+- And khách hàng B đã đăng nhập
+- When khách hàng B truy cập chi tiết TD-43
+- Then hệ thống từ chối truy cập hoặc trả về thông báo không tìm thấy theo chính sách bảo mật
+- And không tiết lộ dữ liệu của khách hàng A
+Kịch bản 4: Xem danh sách khi chưa có ticket
+- Given khách hàng đã đăng nhập nhưng chưa tạo ticket nào
+- When khách hàng mở trang danh sách ticket
+- Then hệ thống hiển thị danh sách rỗng
+- And thông báo chưa có ticket nào
+5. US05 – Bình luận và đính kèm file
+Story: Là khách hàng, tôi muốn bổ sung bình luận và file đính kèm để cung cấp thêm thông tin cho nhân viên hỗ trợ.
+Kịch bản 1: Thêm bình luận thành công
+- Given ticket TD-42 đang mở và khách hàng là chủ sở hữu
+- When khách hàng nhập bình luận hợp lệ và nhấn Gửi
+- Then bình luận được lưu vào ticket
+- And bình luận hiển thị tên người gửi và thời gian gửi
+Kịch bản 2: Tải file hợp lệ thành công
+- Given ticket TD-42 đang cho phép đính kèm file
+- When khách hàng tải lên ảnh PNG có dung lượng nằm trong giới hạn
+- Then hệ thống lưu file thành công
+- And file được liên kết với ticket TD-42
+Kịch bản 3: Tải file vượt quá dung lượng
+- Given hệ thống giới hạn dung lượng file là 10 MB
+- When khách hàng tải lên file có dung lượng 15 MB
+- Then hệ thống thông báo file vượt quá dung lượng cho phép
+- And file không được chấp nhận
+Kịch bản 4: Tải file có định dạng không được hỗ trợ
+- Given hệ thống chỉ cho phép các định dạng PDF, PNG, JPG và DOCX
+- When khách hàng tải lên file script.exe
+- Then hệ thống thông báo định dạng file không hợp lệ
+- And file không được lưu hoặc liên kết với ticket
+6. US06 – Xem danh sách ticket cần xử lý
+Story: Là nhân viên hỗ trợ, tôi muốn xem các ticket được giao hoặc chưa có người xử lý để chủ động tiếp nhận công việc.
+Kịch bản 1: Xem ticket được giao
+- Given nhanvien01 đã đăng nhập và được giao ticket TD-42
+- When nhân viên mở danh sách ticket của mình
+- Then hệ thống hiển thị TD-42
+- And thông tin trạng thái và mức độ ưu tiên được hiển thị chính xác
+Kịch bản 2: Xem ticket chưa có người xử lý
+- Given tồn tại ticket TD-43 chưa được phân công
+- When nhân viên mở danh sách ticket chưa có người xử lý
+- Then hệ thống hiển thị TD-43 nếu nhân viên có quyền xem danh sách này
+Kịch bản 3: Nhân viên xem ticket không thuộc phạm vi được phép
+- Given nhanvien01 chỉ được phép xem ticket được giao cho mình
+- And ticket TD-44 được giao cho nhanvien02
+- When nhanvien01 truy cập ticket TD-44
+- Then hệ thống từ chối truy cập
+- And không tiết lộ nội dung ticket ngoài phạm vi quyền hạn
+7. US07 – Phân công ticket
+Story: Là quản lý, tôi muốn gán ticket cho nhân viên để công việc có người chịu trách nhiệm.
+Kịch bản 1: Gán thành công
+- Given ticket TD-42 đang ở trạng thái Mới
+- When quản lý gán ticket cho nhanvien01
+- Then người xử lý của ticket là nhanvien01
+- And trạng thái chuyển thành Đang xử lý
+- And nhanvien01 nhận được email thông báo
+Kịch bản 2: Không gán được ticket đã đóng
+- Given ticket TD-43 đang ở trạng thái Đã đóng
+- When quản lý gán ticket cho nhanvien01
+- Then hệ thống báo lỗi Ticket đã đóng
+- And ticket không thay đổi
+Kịch bản 3: Gán cho nhân viên không tồn tại
+- Given ticket TD-44 đang ở trạng thái Mới
+- And tài khoản nhanvien99 không tồn tại
+- When quản lý gán ticket cho nhanvien99
+- Then hệ thống thông báo nhân viên không hợp lệ
+- And người xử lý của ticket không thay đổi
+Kịch bản 4: Gán cho tài khoản bị khóa
+- Given ticket TD-45 đang ở trạng thái Mới
+- And tài khoản nhanvien02 đã bị khóa
+- When quản lý gán ticket cho nhanvien02
+- Then hệ thống thông báo không thể gán ticket cho tài khoản bị khóa
+- And ticket không thay đổi
+Kịch bản 5: Nhân viên không có quyền phân công
+- Given nhanvien01 đã đăng nhập với vai trò Nhân viên hỗ trợ
+- When nhân viên gửi yêu cầu phân công TD-42 cho người khác
+- Then hệ thống từ chối yêu cầu
+- And người xử lý của ticket không thay đổi
+8. US08 – Cập nhật trạng thái ticket
+Story: Là nhân viên hỗ trợ, tôi muốn cập nhật trạng thái ticket để phản ánh chính xác tiến độ xử lý.
+Kịch bản 1: Chuyển sang Đang xử lý thành công
+- Given ticket TD-42 đã được giao cho nhanvien01 và đang ở trạng thái Mới
+- When nhanvien01 chuyển trạng thái thành Đang xử lý
+- Then hệ thống cập nhật trạng thái thành công
+- And thời điểm cập nhật được ghi nhận
+Kịch bản 2: Đánh dấu đã giải quyết
+- Given ticket TD-42 đang ở trạng thái Đang xử lý
+- When nhân viên phụ trách chuyển trạng thái thành Đã giải quyết
+- Then hệ thống cập nhật trạng thái
+- And ghi nhận thời điểm giải quyết
+Kịch bản 3: Cập nhật trạng thái không hợp lệ
+- Given ticket TD-43 đang ở trạng thái Đã đóng
+- When nhân viên cố chuyển trạng thái thành Đang xử lý
+- Then hệ thống thông báo không thể thay đổi trạng thái của ticket đã đóng
+- And trạng thái vẫn là Đã đóng
+Kịch bản 4: Người không phụ trách cập nhật ticket
+- Given ticket TD-44 được giao cho nhanvien01
+- And nhanvien02 không có quyền cập nhật ticket này
+- When nhanvien02 gửi yêu cầu đổi trạng thái
+- Then hệ thống từ chối yêu cầu
+- And trạng thái ticket không thay đổi
+9. US09 – Xem lịch sử thay đổi ticket
+Story: Là người dùng, tôi muốn xem lịch sử thay đổi của ticket để biết ai đã thực hiện thay đổi và vào thời điểm nào.
+Kịch bản 1: Xem lịch sử thành công
+- Given ticket TD-42 có lịch sử tạo, phân công và đổi trạng thái
+- When người có quyền mở mục lịch sử ticket
+- Then hệ thống hiển thị các sự kiện theo thứ tự thời gian
+- And mỗi sự kiện hiển thị người thực hiện, thời điểm và nội dung thay đổi
+Kịch bản 2: Ticket chưa có thay đổi bổ sung
+- Given ticket TD-43 vừa được tạo
+- When khách hàng mở mục lịch sử
+- Then hệ thống hiển thị sự kiện tạo ticket
+- And thông báo chưa có thay đổi nào khác
+Kịch bản 3: Người dùng không có quyền xem lịch sử
+- Given ticket TD-44 không thuộc phạm vi truy cập của khách hàng B
+- When khách hàng B yêu cầu xem lịch sử TD-44
+- Then hệ thống từ chối truy cập
+- And không tiết lộ thông tin lịch sử
+10. US10 – Nhận thông báo email
+Story: Là người dùng, tôi muốn nhận email khi ticket có thay đổi để kịp thời nắm bắt thông tin.
+Kịch bản 1: Gửi email khi phân công ticket
+- Given ticket TD-42 được gán cho nhanvien01
+- And email của nhanvien01 hợp lệ
+- When hệ thống ghi nhận việc phân công thành công
+- Then hệ thống đưa tác vụ gửi email vào hàng đợi Celery
+- And email thông báo phân công được gửi thành công
+Kịch bản 2: Gửi email khi có bình luận mới
+- Given ticket TD-42 có người đăng ký nhận thông báo
+- When khách hàng thêm bình luận mới
+- Then hệ thống tạo tác vụ thông báo
+- And người nhận phù hợp nhận được email về bình luận mới
+Kịch bản 3: Gửi email thất bại
+- Given tác vụ gửi email cho ticket TD-42 bị lỗi do máy chủ email không khả dụng
+- When Celery thực hiện tác vụ gửi email
+- Then hệ thống ghi nhận lỗi gửi email
+- And tác vụ được thử lại theo chính sách cấu hình
+Kịch bản 4: Người nhận chưa có địa chỉ email hợp lệ
+- Given ticket TD-42 được phân công cho tài khoản chưa có email hợp lệ
+- When hệ thống xử lý tác vụ thông báo
+- Then hệ thống ghi nhận không thể gửi email do thông tin người nhận không hợp lệ
+- And thông tin phân công ticket vẫn được lưu thành công
+11. US11 – Dashboard thống kê ticket
+Story: Là quản lý, tôi muốn xem dashboard thống kê ticket để đánh giá hiệu quả hoạt động hỗ trợ.
+Kịch bản 1: Xem thống kê theo trạng thái
+- Given hệ thống có 10 ticket, gồm 3 ticket Mới, 4 ticket Đang xử lý và 3 ticket Đã đóng
+- When quản lý mở dashboard
+- Then hệ thống hiển thị số lượng ticket theo từng trạng thái
+- And tổng số ticket là 10
+Kịch bản 2: Lọc thống kê theo nhân viên
+- Given hệ thống có ticket được giao cho nhiều nhân viên
+- When quản lý chọn nhanvien01 làm điều kiện lọc
+- Then dashboard chỉ hiển thị số liệu tương ứng với các ticket thuộc phạm vi lọc
+Kịch bản 3: Không có dữ liệu thống kê
+- Given hệ thống không có ticket trong khoảng thời gian được chọn
+- When quản lý lọc dashboard theo khoảng thời gian đó
+- Then hệ thống hiển thị các chỉ số bằng 0
+- And biểu đồ hiển thị trạng thái không có dữ liệu
+Kịch bản 4: Khoảng thời gian lọc không hợp lệ
+- Given quản lý đang chọn bộ lọc thời gian
+- When quản lý chọn ngày bắt đầu lớn hơn ngày kết thúc
+- Then hệ thống thông báo khoảng thời gian không hợp lệ
+- And không thực hiện truy vấn theo bộ lọc sai
+12. US12 – Theo dõi SLA
+Story: Là quản lý, tôi muốn theo dõi SLA để phát hiện các ticket có nguy cơ quá hạn xử lý.
+Kịch bản 1: Ticket còn thời hạn SLA
+- Given ticket TD-42 có thời hạn SLA là 24 giờ
+- And thời gian đã trôi qua là 8 giờ
+- When quản lý xem dashboard SLA
+- Then ticket được hiển thị ở nhóm còn thời hạn
+- And thời gian còn lại được tính chính xác theo quy tắc SLA
+Kịch bản 2: Ticket quá hạn SLA
+- Given ticket TD-43 có thời hạn SLA là 24 giờ
+- And thời gian xử lý đã vượt 24 giờ mà ticket chưa đạt trạng thái hoàn thành theo quy định
+- When quản lý xem dashboard SLA
+- Then ticket được đánh dấu quá hạn
+- And hệ thống hiển thị thời gian quá hạn
+Kịch bản 3: Ticket chưa có cấu hình SLA
+- Given ticket TD-44 thuộc danh mục chưa được cấu hình SLA
+- When hệ thống tính toán báo cáo SLA
+- Then hệ thống đánh dấu ticket chưa có cấu hình SLA
+- And không tự ý gán thời hạn mặc định nếu nghiệp vụ chưa quy định
+Kịch bản 4: Ticket đã hoàn thành trong thời hạn
+- Given ticket TD-45 được giải quyết trước hạn SLA
+- When quản lý xem báo cáo SLA
+- Then hệ thống xác định ticket hoàn thành đúng hạn
+- And thời gian xử lý thực tế được hiển thị
+13. US13 – Xuất báo cáo Excel
+Story: Là quản lý, tôi muốn xuất báo cáo ticket ra Excel để tổng hợp và phân tích dữ liệu.
+Kịch bản 1: Xuất báo cáo thành công
+- Given quản lý đã chọn khoảng thời gian hợp lệ và có dữ liệu ticket
+- When quản lý yêu cầu xuất báo cáo Excel
+- Then hệ thống tạo tác vụ xuất báo cáo chạy nền
+- And khi hoàn thành, hệ thống cung cấp file Excel có dữ liệu phù hợp với bộ lọc
+Kịch bản 2: Xuất báo cáo không có dữ liệu
+- Given không có ticket nào trong khoảng thời gian được chọn
+- When quản lý yêu cầu xuất báo cáo
+- Then hệ thống tạo báo cáo rỗng có tiêu đề cột hoặc thông báo không có dữ liệu theo thiết kế
+- And tác vụ được đánh dấu hoàn thành nếu file được tạo hợp lệ
+Kịch bản 3: Xuất báo cáo với khoảng thời gian không hợp lệ
+- Given quản lý chọn ngày bắt đầu sau ngày kết thúc
+- When quản lý gửi yêu cầu xuất báo cáo
+- Then hệ thống thông báo khoảng thời gian không hợp lệ
+- And không tạo tác vụ xuất báo cáo
+Kịch bản 4: Tác vụ xuất báo cáo thất bại
+- Given tác vụ xuất Excel gặp lỗi trong quá trình xử lý
+- When Celery thực hiện tác vụ
+- Then hệ thống ghi nhận trạng thái thất bại
+- And người dùng có quyền xem thông báo lỗi phù hợp
+- And hệ thống không cung cấp file chưa hoàn chỉnh như một báo cáo thành công
+Kịch bản 5: Người không có quyền tải báo cáo
+- Given báo cáo Excel chỉ dành cho quản lý
+- And nhân viên hỗ trợ không có quyền tải báo cáo
+- When nhân viên truy cập đường dẫn tải file
+- Then hệ thống từ chối yêu cầu
+- And file báo cáo không bị tiết lộ
+14. US14 – Tìm kiếm, lọc và phân trang ticket
+Story: Là người dùng, tôi muốn tìm kiếm, lọc và phân trang danh sách ticket để nhanh chóng tìm được yêu cầu cần xem hoặc xử lý.
+Kịch bản 1: Tìm kiếm theo mã ticket
+- Given hệ thống có ticket TD-42
+- When người dùng nhập từ khóa TD-42 vào ô tìm kiếm
+- Then hệ thống hiển thị ticket có mã phù hợp
+- And kết quả tuân thủ phạm vi quyền truy cập của người dùng
+Kịch bản 2: Lọc theo trạng thái
+- Given hệ thống có ticket ở nhiều trạng thái
+- When người dùng chọn bộ lọc Đang xử lý
+- Then hệ thống chỉ hiển thị ticket phù hợp với trạng thái đã chọn
+Kịch bản 3: Tìm kiếm không có kết quả
+- Given không có ticket phù hợp với từ khóa TD-99999
+- When người dùng tìm kiếm từ khóa này
+- Then hệ thống hiển thị danh sách rỗng
+- And thông báo không tìm thấy ticket phù hợp
+Kịch bản 4: Chuyển trang thành công
+- Given danh sách có nhiều ticket và được chia thành nhiều trang
+- When người dùng chuyển sang trang 2
+- Then hệ thống hiển thị các ticket thuộc trang 2
+- And không lặp lại hoặc bỏ sót bản ghi do lỗi phân trang
+Kịch bản 5: Yêu cầu số trang không hợp lệ
+- Given danh sách chỉ có 3 trang
+- When người dùng gửi yêu cầu đến trang 1000
+- Then hệ thống xử lý theo quy tắc phân trang đã quy định, chẳng hạn trả về danh sách rỗng hoặc điều hướng đến trang hợp lệ
+- And không xảy ra lỗi máy chủ
+15. US15 – REST API, JWT và Swagger
+Story: Là lập trình viên tích hợp hệ thống, tôi muốn sử dụng REST API có JWT, phân quyền và tài liệu Swagger để tích hợp và kiểm thử TicketDesk.
+Kịch bản 1: Gọi API với JWT hợp lệ
+- Given người dùng có JWT hợp lệ và được cấp quyền truy cập API
+- When người dùng gửi yêu cầu lấy danh sách ticket kèm JWT
+- Then API trả về HTTP 200 OK
+- And dữ liệu phản hồi đúng cấu trúc đã định nghĩa
+Kịch bản 2: Gọi API không có JWT
+- Given endpoint yêu cầu xác thực
+- When người dùng gọi API mà không gửi JWT
+- Then API trả về HTTP 401 Unauthorized
+- And không trả về dữ liệu ticket được bảo vệ
+Kịch bản 3: Gọi API với JWT hết hạn
+- Given người dùng gửi JWT đã hết hạn
+- When người dùng gọi API lấy danh sách ticket
+- Then API trả về HTTP 401 Unauthorized
+- And yêu cầu không được thực hiện như một yêu cầu đã xác thực
+Kịch bản 4: Gọi API không đủ quyền
+- Given JWT hợp lệ thuộc tài khoản Nhân viên hỗ trợ
+- And endpoint chỉ cho phép Quản lý thực hiện thao tác phân công ticket
+- When nhân viên gọi API phân công ticket
+- Then API trả về HTTP 403 Forbidden
+- And dữ liệu ticket không thay đổi
+Kịch bản 5: Gọi API với tham số phân trang không hợp lệ
+- Given API hỗ trợ phân trang theo page và page_size
+- When người dùng gửi page=-1 hoặc page_size=0
+- Then API trả về lỗi xác thực tham số, chẳng hạn HTTP 422 Unprocessable Entity
+- And phản hồi nêu rõ tham số không hợp lệ
+
+Yêu cầu phi chức năng và MoSCoW
+ID	    User Story	                        MoSCoW	        Phạm vi MVP
+US01	Đăng nhập, đăng xuất	            Must	        Có
+US02	Quản lý tài khoản, phân quyền	    Must	        Có, chức năng cơ bản
+US03	Tạo ticket	                        Must	        Có
+US04	Xem danh sách và chi tiết ticket	Must	        Có
+US05	Bình luận và đính kèm file	        Should	        Có thể đưa vào MVP bản đầy đủ; ưu tiên bình luận trước
+US06	Nhân viên xem ticket cần xử lý	    Must	        Có
+US07	Quản lý phân công ticket	        Must	        Có
+US08	Cập nhật trạng thái ticket	        Must	        Có
+US09	Xem lịch sử thay đổi ticket	        Should	        Có thể làm bản đơn giản
+US10	Gửi thông báo email qua Celery	    Should	        Sau khi luồng ticket cốt lõi ổn định
+US11	Dashboard thống kê	                Should	        Dashboard cơ bản
+US12	Theo dõi SLA	                    Could	        Không bắt buộc trong MVP
+US13	Xuất báo cáo Excel chạy nền	        Could	        Không bắt buộc trong MVP
+US14	Tìm kiếm, lọc và phân trang	        Must	        Có, mức cơ bản
+US15	REST API, JWT, phân quyền, Swagger	Must	        Có
