@@ -8,6 +8,7 @@ class CommentInline(admin.TabularInline):
     extra = 1
     fields = ["user", "content", "is_internal", "created_at"]
     readonly_fields = ["created_at"]
+    autocomplete_fields = ["user"]
 
 
 class AttachmentInline(admin.TabularInline):
@@ -15,6 +16,7 @@ class AttachmentInline(admin.TabularInline):
     extra = 1
     fields = ["file", "file_name", "file_size", "uploaded_by", "created_at"]
     readonly_fields = ["file_name", "file_size", "created_at"]
+    autocomplete_fields = ["uploaded_by"]
 
 
 class TicketHistoryInline(admin.TabularInline):
@@ -50,6 +52,7 @@ class TicketAdmin(admin.ModelAdmin):
         "due_date",
         "created_at",
     ]
+    list_select_related = ["priority", "category", "customer", "assigned_to"]
     list_filter = ["status", "priority", "category", "created_at"]
     search_fields = [
         "title",
@@ -64,6 +67,7 @@ class TicketAdmin(admin.ModelAdmin):
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
     list_display = ["id", "ticket", "user", "is_internal", "created_at"]
+    list_select_related = ["ticket", "user"]
     list_filter = ["is_internal", "created_at"]
     search_fields = ["content", "user__username", "ticket__title"]
     autocomplete_fields = ["ticket", "user"]
@@ -80,6 +84,7 @@ class AttachmentAdmin(admin.ModelAdmin):
         "uploaded_by",
         "created_at",
     ]
+    list_select_related = ["ticket", "comment", "uploaded_by"]
     list_filter = ["created_at"]
     search_fields = ["file_name", "ticket__title", "uploaded_by__username"]
     autocomplete_fields = ["ticket", "comment", "uploaded_by"]
@@ -88,6 +93,7 @@ class AttachmentAdmin(admin.ModelAdmin):
 @admin.register(TicketHistory)
 class TicketHistoryAdmin(admin.ModelAdmin):
     list_display = ["id", "ticket", "user", "action", "created_at"]
+    list_select_related = ["ticket", "user"]
     list_filter = ["action", "created_at"]
     search_fields = ["action", "old_value", "new_value", "ticket__title"]
     autocomplete_fields = ["ticket", "user"]

@@ -42,6 +42,10 @@
   <nav>
     <div>
       <a href="{% url 'tickets:list' %}" style="margin-left:0; font-weight:bold; font-size: 1.1rem;">TicketDesk</a>
+      {% if user.is_authenticated %}
+        <a href="{% url 'tickets:list' %}" style="margin-left:20px;">Danh sách Ticket</a>
+        <a href="{% url 'tickets:stats' %}" style="margin-left:16px;">📊 Thống kê</a>
+      {% endif %}
     </div>
     <div>
       {% if user.is_authenticated %}

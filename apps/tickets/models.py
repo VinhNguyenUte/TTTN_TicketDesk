@@ -86,6 +86,26 @@ class Ticket(models.Model):
         verbose_name = "Ticket"
         verbose_name_plural = "Tickets"
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(
+                fields=["status", "-created_at"],
+                name="ticket_status_created_idx",
+            ),
+            models.Index(
+                fields=["customer", "status"],
+                name="ticket_customer_status_idx",
+            ),
+            models.Index(
+                fields=["assigned_to", "status"],
+                name="ticket_assigned_status_idx",
+            ),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(title=""),
+                name="ticket_title_not_empty",
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"#{self.pk} {self.title}"
@@ -94,9 +114,17 @@ class Ticket(models.Model):
     def created_by(self):
         return self.customer
 
+    @created_by.setter
+    def created_by(self, value):
+        self.customer = value
+
     @property
     def assignee(self):
         return self.assigned_to
+
+    @assignee.setter
+    def assignee(self, value):
+        self.assigned_to = value
 
     def save(self, *args, **kwargs):
         if (

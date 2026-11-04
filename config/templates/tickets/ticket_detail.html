@@ -36,7 +36,7 @@
       </div>
 
       <!-- Bình luận & Trao đổi -->
-      <h3>Bình luận & Phản hồi ({{ comments.count }})</h3>
+      <h3>Bình luận & Phản hồi ({{ comments|length }})</h3>
       <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
         {% for comment in comments %}
           <div style="border: 1px solid {% if comment.is_internal %}#fde68a; background: #fefce8;{% else %}#e2e8f0; background: #fff;{% endif %} border-radius: 8px; padding: 12px;">
