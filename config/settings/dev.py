@@ -35,3 +35,29 @@ DATABASES = {
 
 # Email backend cho môi trường dev (in ra terminal)
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+# Cấu hình django-debug-toolbar cho môi trường dev (chỉ kích hoạt khi đã cài đặt)
+try:
+    import debug_toolbar  # noqa: F401
+
+    INSTALLED_APPS = list(INSTALLED_APPS) + ["debug_toolbar"]  # noqa: F405
+    MIDDLEWARE = ["debug_toolbar.middleware.DebugToolbarMiddleware"] + list(  # noqa: F405
+        MIDDLEWARE  # noqa: F405
+    )
+
+    INTERNAL_IPS = [
+        "127.0.0.1",
+        "localhost",
+    ]
+
+    # Cho phép debug toolbar hiển thị trong môi trường Docker
+    if os.path.exists("/.dockerenv"):
+        try:
+            import socket
+
+            hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
+            INTERNAL_IPS += [ip[: ip.rfind(".")] + ".1" for ip in ips]
+        except Exception:
+            pass
+except ImportError:
+    pass

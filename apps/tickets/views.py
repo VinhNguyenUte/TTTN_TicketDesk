@@ -1,4 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views import View
@@ -7,12 +8,13 @@ from django.views.generic import (
     DeleteView,
     DetailView,
     ListView,
+    TemplateView,
     UpdateView,
 )
 
 from apps.accounts.models import User
 
-from .models import Attachment, Comment, Ticket, TicketHistory
+from .models import Attachment, Category, Comment, Ticket, TicketHistory
 
 
 class TicketQuerysetMixin:
@@ -140,3 +142,75 @@ class CommentCreateView(LoginRequiredMixin, View):
                 action="Thêm bình luận" + (" (Nội bộ)" if is_internal else ""),
             )
         return redirect("tickets:detail", pk=ticket.pk)
+
+
+class TicketStatsView(LoginRequiredMixin, TemplateView):
+    template_name = "tickets/statistics.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # 1. Thống kê theo trạng thái (status) dùng values() và annotate()
+        status_counts_raw = (
+            Ticket.objects.values("status")
+            .annotate(total=Count("id"))
+            .order_by("status")
+        )
+        status_dict = {item["status"]: item["total"] for item in status_counts_raw}
+        status_stats = []
+        for choice_val, choice_label in Ticket.Status.choices:
+            status_stats.append(
+                {
+                    "value": choice_val,
+                    "label": choice_label,
+                    "count": status_dict.get(choice_val, 0),
+                }
+            )
+        context["status_stats"] = status_stats
+
+        # 2. Tổng quan KPI dùng aggregate()
+        summary = Ticket.objects.aggregate(
+            total_tickets=Count("id"),
+            open_tickets=Count(
+                "id",
+                filter=~Q(status=Ticket.Status.CLOSED),
+            ),
+            resolved_tickets=Count(
+                "id",
+                filter=Q(status__in=[Ticket.Status.RESOLVED, Ticket.Status.CLOSED]),
+            ),
+        )
+        total = summary["total_tickets"] or 0
+        resolved = summary["resolved_tickets"] or 0
+        context["total_tickets"] = total
+        context["open_tickets"] = summary["open_tickets"] or 0
+        context["resolved_tickets"] = resolved
+        context["resolution_rate"] = (
+            round((resolved / total * 100), 1) if total > 0 else 0
+        )
+
+        # 3. Thống kê theo người xử lý (Agent)
+        agents = (
+            User.objects.filter(role=User.Role.AGENT)
+            .annotate(
+                total_assigned=Count("assigned_tickets"),
+                open_count=Count(
+                    "assigned_tickets",
+                    filter=~Q(assigned_tickets__status=Ticket.Status.CLOSED),
+                ),
+                closed_count=Count(
+                    "assigned_tickets",
+                    filter=Q(assigned_tickets__status=Ticket.Status.CLOSED),
+                ),
+            )
+            .order_by("-open_count", "-total_assigned")
+        )
+        context["agent_stats"] = agents
+
+        # 4. Thống kê theo danh mục (Category)
+        category_stats = Category.objects.annotate(
+            ticket_count=Count("tickets")
+        ).order_by("-ticket_count")
+        context["category_stats"] = category_stats
+
+        return context
