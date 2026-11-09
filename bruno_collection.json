@@ -1,0 +1,311 @@
+{
+  "name": "TicketDesk-API",
+  "version": "1",
+  "items": [
+    {
+      "type": "folder",
+      "name": "1. Auth (US01)",
+      "items": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/auth/register",
+            "headers": [
+              { "name": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "json",
+              "json": "{\n  \"username\": \"khach01\",\n  \"password\": \"matkhau123\",\n  \"password_confirm\": \"matkhau123\",\n  \"email\": \"khach01@example.com\",\n  \"first_name\": \"Minh\",\n  \"last_name\": \"Le\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login (Get JWT Token)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/auth/login",
+            "headers": [
+              { "name": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "json",
+              "json": "{\n  \"username\": \"khach01\",\n  \"password\": \"matkhau123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Logout (Blacklist Token)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/auth/logout",
+            "headers": [
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "json",
+              "json": "{\n  \"refresh\": \"{{refreshToken}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "2. Users & Roles (US02 - Manager)",
+      "items": [
+        {
+          "name": "Get User List",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/users?role=customer",
+            "headers": [
+              { "name": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        },
+        {
+          "name": "Update User Role",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/v1/users/2/role",
+            "headers": [
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "json",
+              "json": "{\n  \"role\": \"agent\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Toggle User Status (Lock/Unlock)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/v1/users/2/status",
+            "headers": [
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "json",
+              "json": "{\n  \"is_active\": false\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "3. Tickets (US03, US04, US06, US07, US08, US14)",
+      "items": [
+        {
+          "name": "Create Ticket (Customer)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/tickets",
+            "headers": [
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "json",
+              "json": "{\n  \"title\": \"Lỗi không thể kết nối máy in văn phòng\",\n  \"description\": \"Máy in báo offline từ sáng nay\",\n  \"category\": 1,\n  \"priority\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "List Tickets (Filter & Search)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/tickets?status=new&search=máy in",
+            "headers": [
+              { "name": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        },
+        {
+          "name": "Get Ticket Detail",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/tickets/1",
+            "headers": [
+              { "name": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        },
+        {
+          "name": "Assign Ticket (Manager / Agent)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/v1/tickets/1/assign",
+            "headers": [
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "json",
+              "json": "{\n  \"agent_id\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Ticket Status",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/v1/tickets/1/status",
+            "headers": [
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "json",
+              "json": "{\n  \"status\": \"in_progress\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "4. Comments & Attachments (US05)",
+      "items": [
+        {
+          "name": "Add Comment to Ticket",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/tickets/1/comments",
+            "headers": [
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "body": {
+              "mode": "json",
+              "json": "{\n  \"content\": \"Đã tiến hành khởi động lại card mạng của máy in.\",\n  \"is_internal\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Ticket Comments",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/tickets/1/comments",
+            "headers": [
+              { "name": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "5. History & Notifications (US09, US10)",
+      "items": [
+        {
+          "name": "Get Ticket History",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/tickets/1/history",
+            "headers": [
+              { "name": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        },
+        {
+          "name": "Get My Notifications",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/notifications",
+            "headers": [
+              { "name": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        },
+        {
+          "name": "Mark Notification Read",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/v1/notifications/1/read",
+            "headers": [
+              { "name": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "6. Dashboard, SLA & Report (US11, US12, US13)",
+      "items": [
+        {
+          "name": "Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/dashboard/stats",
+            "headers": [
+              { "name": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        },
+        {
+          "name": "SLA Warnings",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/dashboard/sla-warnings",
+            "headers": [
+              { "name": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        },
+        {
+          "name": "Export Tickets Excel",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/reports/tickets/export",
+            "headers": [
+              { "name": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "7. Metadata",
+      "items": [
+        {
+          "name": "Get Categories",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/categories",
+            "headers": [
+              { "name": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        },
+        {
+          "name": "Get Priorities",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/priorities",
+            "headers": [
+              { "name": "Authorization", "value": "Bearer {{accessToken}}" }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "environments": [
+    {
+      "name": "Local",
+      "variables": [
+        { "name": "baseUrl", "value": "http://localhost:8000" },
+        { "name": "accessToken", "value": "" },
+        { "name": "refreshToken", "value": "" }
+      ]
+    }
+  ]
+}
