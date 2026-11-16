@@ -6,7 +6,7 @@ from .serializers import NotificationReadSerializer, NotificationSerializer
 
 
 class NotificationListView(generics.ListAPIView):
-    """US10: Lấy danh sách thông báo của người dùng hiện tại."""
+    """Lấy danh sách thông báo của người dùng hiện tại."""
 
     serializer_class = NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -21,7 +21,7 @@ class NotificationListView(generics.ListAPIView):
 
 
 class NotificationMarkReadView(generics.UpdateAPIView):
-    """US10: Đánh dấu thông báo đã đọc (PATCH)."""
+    """Đánh dấu thông báo đã đọc (PATCH)."""
 
     serializer_class = NotificationReadSerializer
     permission_classes = [permissions.IsAuthenticated]

@@ -18,7 +18,7 @@ from .serializers import (
 
 
 class RegisterView(generics.CreateAPIView):
-    """US01: Đăng ký tài khoản mới (mặc định role Customer)."""
+    """Đăng ký tài khoản mới (mặc định role Customer)."""
 
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
@@ -26,7 +26,7 @@ class RegisterView(generics.CreateAPIView):
 
 
 class LogoutView(generics.GenericAPIView):
-    """US01: Đăng xuất hệ thống, blacklist refresh token."""
+    """Đăng xuất hệ thống, blacklist refresh token."""
 
     serializer_class = LogoutSerializer
     permission_classes = [IsAuthenticated]
@@ -49,7 +49,7 @@ class LogoutView(generics.GenericAPIView):
 
 
 class UserListView(generics.ListAPIView):
-    """US02: Lấy danh sách toàn bộ người dùng (có phân trang/lọc) dành cho Manager."""
+    """Lấy danh sách toàn bộ người dùng (có phân trang/lọc) dành cho Manager."""
 
     queryset = User.objects.all().order_by("-id")
     serializer_class = UserSerializer
@@ -61,7 +61,7 @@ class UserListView(generics.ListAPIView):
 
 
 class UserRoleUpdateView(generics.UpdateAPIView):
-    """US02: Cập nhật phân quyền (role) cho người dùng (PUT)."""
+    """Cập nhật phân quyền (role) cho người dùng (PUT)."""
 
     queryset = User.objects.all()
     serializer_class = UserRoleUpdateSerializer
@@ -70,7 +70,7 @@ class UserRoleUpdateView(generics.UpdateAPIView):
 
 
 class UserStatusUpdateView(generics.UpdateAPIView):
-    """US02: Khóa hoặc mở khóa tài khoản (is_active) (PATCH)."""
+    """Khóa hoặc mở khóa tài khoản (is_active) (PATCH)."""
 
     queryset = User.objects.all()
     serializer_class = UserStatusUpdateSerializer
