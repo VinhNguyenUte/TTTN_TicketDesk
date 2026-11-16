@@ -17,9 +17,7 @@ ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]
 POSTGRES_DB = os.getenv("POSTGRES_DB", "ticketdesk")
 POSTGRES_USER = os.getenv("POSTGRES_USER", "ticketdesk_user")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "ticketdesk_pass")
-POSTGRES_HOST = os.getenv(
-    "POSTGRES_HOST", "localhost"
-)  # Mặc định localhost cho máy thật, trong Docker ghi đè thành 'db'
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
 POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
 
 DATABASES = {
