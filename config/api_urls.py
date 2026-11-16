@@ -29,12 +29,12 @@ router = DefaultRouter(trailing_slash=False)
 router.register(r"tickets", TicketViewSet, basename="ticket")
 
 urlpatterns = [
-    # 1. Authentication (US01)
+    # 1. Authenticatio
     path("auth/register", RegisterView.as_view(), name="auth-register"),
     path("auth/login", TokenObtainPairView.as_view(), name="auth-login"),
     path("auth/token/refresh", TokenRefreshView.as_view(), name="token-refresh"),
     path("auth/logout", LogoutView.as_view(), name="auth-logout"),
-    # 2. User & Role Management (US02)
+    # 2. User & Role Managemen
     path("users", UserListView.as_view(), name="user-list"),
     path("users/<int:pk>/role", UserRoleUpdateView.as_view(), name="user-role-update"),
     path(
@@ -42,14 +42,14 @@ urlpatterns = [
         UserStatusUpdateView.as_view(),
         name="user-status-update",
     ),
-    # 4. Comments & Attachments (US05)
+    # 4. Comments & Attachments
     path(
         "tickets/<int:ticket_id>/comments",
         TicketCommentListCreateView.as_view(),
         name="ticket-comments",
     ),
     path("attachments", AttachmentUploadView.as_view(), name="attachment-upload"),
-    # 5. History & Notifications (US09, US10)
+    # 5. History & Notifications
     path(
         "tickets/<int:ticket_id>/history",
         TicketHistoryListView.as_view(),
@@ -61,7 +61,7 @@ urlpatterns = [
         NotificationMarkReadView.as_view(),
         name="notification-read",
     ),
-    # 6. Dashboard, SLA & Report (US11, US12, US13)
+    # 6. Dashboard, SLA & Report
     path("dashboard/stats", DashboardStatsView.as_view(), name="dashboard-stats"),
     path(
         "dashboard/sla-warnings",

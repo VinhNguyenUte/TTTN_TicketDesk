@@ -64,7 +64,6 @@ class PriorityListView(generics.ListAPIView):
 
 class TicketViewSet(viewsets.ModelViewSet):
     """
-    US03, US04, US06, US07, US08, US14:
     Quản lý Ticket (Tạo mới, xem danh sách, chi tiết, sửa, gán, đổi trạng thái).
     """
 
@@ -172,7 +171,7 @@ class TicketViewSet(viewsets.ModelViewSet):
 
 
 class TicketCommentListCreateView(generics.ListCreateAPIView):
-    """US05: Danh sách và tạo bình luận trong ticket."""
+    """Danh sách và tạo bình luận trong ticket."""
 
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -216,7 +215,7 @@ class TicketCommentListCreateView(generics.ListCreateAPIView):
 
 
 class AttachmentUploadView(generics.CreateAPIView):
-    """US05: Upload tệp đính kèm cho ticket hoặc comment."""
+    """Upload tệp đính kèm cho ticket hoặc comment."""
 
     serializer_class = AttachmentSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -227,7 +226,7 @@ class AttachmentUploadView(generics.CreateAPIView):
 
 
 class TicketHistoryListView(generics.ListAPIView):
-    """US09: Xem lịch sử thay đổi của một ticket."""
+    """Xem lịch sử thay đổi của một ticket."""
 
     serializer_class = TicketHistorySerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -250,7 +249,7 @@ class TicketHistoryListView(generics.ListAPIView):
 
 # US11, US12, US13: Dashboard, SLA, Export
 class DashboardStatsView(generics.GenericAPIView):
-    """US11: Lấy số liệu thống kê ticket theo trạng thái, nhân viên, thời gian (MANAGER)."""
+    """Lấy số liệu thống kê ticket theo trạng thái, nhân viên, thời gian (MANAGER)."""
 
     permission_classes = [IsManager]
     serializer_class = DashboardStatsSerializer
@@ -314,7 +313,7 @@ class DashboardStatsView(generics.GenericAPIView):
 
 
 class SLAWarningsView(generics.ListAPIView):
-    """US12: Theo dõi danh sách ticket có nguy cơ hoặc đã quá hạn SLA (MANAGER)."""
+    """Theo dõi danh sách ticket có nguy cơ hoặc đã quá hạn SLA (MANAGER)."""
 
     serializer_class = TicketSerializer
     permission_classes = [IsManager]
@@ -339,7 +338,7 @@ class SLAWarningsView(generics.ListAPIView):
 
 
 class TicketExportExcelView(APIView):
-    """US13: Xuất báo cáo thống kê ticket ra file Excel (.xlsx) (MANAGER)."""
+    """Xuất báo cáo thống kê ticket ra file Excel (.xlsx) (MANAGER)."""
 
     permission_classes = [IsManager]
 
