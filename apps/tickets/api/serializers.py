@@ -1,3 +1,5 @@
+import os
+
 from rest_framework import serializers
 
 from apps.tickets.models import (
@@ -22,6 +24,10 @@ class PrioritySerializer(serializers.ModelSerializer):
         fields = ["id", "name", "level_weight", "color"]
 
 
+ALLOWED_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg", ".docx"}
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+
+
 class AttachmentSerializer(serializers.ModelSerializer):
     uploaded_by = serializers.StringRelatedField(read_only=True)
 
@@ -38,6 +44,18 @@ class AttachmentSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "file_name", "file_size", "uploaded_by", "created_at"]
+
+    def validate_file(self, value):
+        ext = os.path.splitext(value.name)[1].lower()
+        if ext not in ALLOWED_EXTENSIONS:
+            raise serializers.ValidationError(
+                f"Định dạng file không hợp lệ. Chỉ chấp nhận: {', '.join(sorted(ALLOWED_EXTENSIONS))}."
+            )
+        if value.size > MAX_FILE_SIZE:
+            raise serializers.ValidationError(
+                "File vượt quá dung lượng cho phép (tối đa 10 MB)."
+            )
+        return value
 
 
 class CommentSerializer(serializers.ModelSerializer):
