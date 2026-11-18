@@ -20,7 +20,10 @@ dependencies = [
 [dependency-groups]
 dev = [
     "django-debug-toolbar>=8.0.0",
+    "django-stubs>=6.1.2",
+    "djangorestframework-stubs>=3.18.2",
     "factory-boy>=3.3.3",
+    "mypy>=2.4.1",
     "pre-commit>=4.7.0",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
@@ -32,6 +35,40 @@ dev = [
 DJANGO_SETTINGS_MODULE = "config.settings.test"
 python_files = ["tests.py", "test_*.py", "*_tests.py"]
 addopts = "-q"
+
+[tool.coverage.run]
+omit = [
+    "*/migrations/*",
+    "*/management/*",
+    "*/tests/*",
+    "*/tests.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 70
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_ignores = false
+warn_redundant_casts = true
+check_untyped_defs = false
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disable_error_code = ["var-annotated", "attr-defined", "return-value", "operator"]
+exclude = [
+    "migrations",
+    "management",
+    "tests",
+]
+
+
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
+
+
 
 
 [tool.ruff]

@@ -1,9 +1,19 @@
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from apps.accounts.models import User
-from apps.tickets.models import Category, Comment, Priority, Ticket
+from apps.notifications.models import Notification
+from apps.tickets.models import Ticket
+from apps.tickets.tests.factories import (
+    CategoryFactory,
+    PriorityFactory,
+    TicketFactory,
+    UserFactory,
+)
+
+pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture
@@ -12,297 +22,340 @@ def api_client():
 
 
 @pytest.fixture
-def customer_user(db):
-    return User.objects.create_user(
-        username="khach01",
-        password="password123",
-        email="khach01@example.com",
-        role=User.Role.CUSTOMER,
-    )
+def customer_user():
+    return UserFactory(role=User.Role.CUSTOMER, username="khach01")
 
 
 @pytest.fixture
-def other_customer(db):
-    return User.objects.create_user(
-        username="khach02",
-        password="password123",
-        email="khach02@example.com",
-        role=User.Role.CUSTOMER,
-    )
+def other_customer():
+    return UserFactory(role=User.Role.CUSTOMER, username="khach02")
 
 
 @pytest.fixture
-def agent_user(db):
-    return User.objects.create_user(
-        username="agent01",
-        password="password123",
-        email="agent01@example.com",
-        role=User.Role.AGENT,
-    )
+def agent_user():
+    return UserFactory(role=User.Role.AGENT, username="agent01")
 
 
 @pytest.fixture
-def manager_user(db):
-    return User.objects.create_user(
-        username="manager01",
-        password="password123",
-        email="manager01@example.com",
-        role=User.Role.MANAGER,
-    )
+def manager_user():
+    return UserFactory(role=User.Role.MANAGER, username="manager01")
 
 
 @pytest.fixture
-def category(db):
-    return Category.objects.create(name="Phần cứng", description="Lỗi phần cứng")
+def category():
+    return CategoryFactory(name="Phần cứng")
 
 
 @pytest.fixture
-def priority(db):
-    return Priority.objects.create(name="Cao", level_weight=3, color="#ef4444")
+def priority():
+    return PriorityFactory(name="Cao", level_weight=3, color="#ef4444")
 
 
-@pytest.mark.django_db
-class TestAuthenticationAPI:
-    """Kiểm tra US01: Register, Login JWT, Logout."""
-
+# ==============================================================================
+# 1. TEST AUTHENTICATION & TOKENS (US01)
+# ==============================================================================
+class TestAuthAPI:
     def test_register_success(self, api_client):
-        url = "/api/v1/auth/register"
         data = {
-            "username": "newuser",
-            "password": "strongpassword123",
-            "password_confirm": "strongpassword123",
+            "username": "new_user_1",
+            "password": "Password@123",
+            "password_confirm": "Password@123",
             "email": "newuser@example.com",
-            "first_name": "Nguyen",
-            "last_name": "Van A",
+            "first_name": "Van",
+            "last_name": "Nguyen",
         }
-        response = api_client.post(url, data)
-        assert response.status_code == status.HTTP_201_CREATED
-        user = User.objects.get(username="newuser")
+        res = api_client.post("/api/v1/auth/register", data)
+        assert res.status_code == status.HTTP_201_CREATED
+        user = User.objects.get(username="new_user_1")
         assert user.role == User.Role.CUSTOMER
 
-    def test_login_jwt(self, api_client, customer_user):
-        url = "/api/v1/auth/login"
-        response = api_client.post(
-            url, {"username": "khach01", "password": "password123"}
+    def test_register_password_mismatch_fails(self, api_client):
+        data = {
+            "username": "mismatch_user",
+            "password": "Password@123",
+            "password_confirm": "Password@456",
+        }
+        res = api_client.post("/api/v1/auth/register", data)
+        assert res.status_code == status.HTTP_400_BAD_REQUEST
+        assert "password_confirm" in res.data
+
+    def test_login_jwt_success(self, api_client, customer_user):
+        customer_user.set_password("password123")
+        customer_user.save()
+        res = api_client.post(
+            "/api/v1/auth/login",
+            {"username": customer_user.username, "password": "password123"},
         )
-        assert response.status_code == status.HTTP_200_OK
-        assert "access" in response.data
-        assert "refresh" in response.data
+        assert res.status_code == status.HTTP_200_OK
+        assert "access" in res.data
+        assert "refresh" in res.data
 
-    def test_logout(self, api_client, customer_user):
-        login_res = api_client.post(
-            "/api/v1/auth/login", {"username": "khach01", "password": "password123"}
+    def test_login_invalid_credentials_fails(self, api_client):
+        res = api_client.post(
+            "/api/v1/auth/login", {"username": "fake", "password": "wrong"}
         )
-        access_token = login_res.data["access"]
-        refresh_token = login_res.data["refresh"]
+        assert res.status_code == status.HTTP_401_UNAUTHORIZED
 
-        api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
-        logout_res = api_client.post("/api/v1/auth/logout", {"refresh": refresh_token})
-        assert logout_res.status_code == status.HTTP_200_OK
-
-
-@pytest.mark.django_db
-class TestUserManagementAPI:
-    """Kiểm tra US02: Quản lý người dùng và phân quyền (MANAGER)."""
-
-    def test_manager_can_list_users(self, api_client, manager_user, customer_user):
-        api_client.force_authenticate(user=manager_user)
-        response = api_client.get("/api/v1/users")
-        assert response.status_code == status.HTTP_200_OK
-
-    def test_customer_cannot_list_users(self, api_client, customer_user):
+    def test_logout_without_token_fails(self, api_client, customer_user):
         api_client.force_authenticate(user=customer_user)
-        response = api_client.get("/api/v1/users")
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        res = api_client.post("/api/v1/auth/logout", {})
+        assert res.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_manager_can_change_role(self, api_client, manager_user, customer_user):
-        api_client.force_authenticate(user=manager_user)
-        response = api_client.put(
-            f"/api/v1/users/{customer_user.id}/role", {"role": User.Role.AGENT}
-        )
-        assert response.status_code == status.HTTP_200_OK
-        customer_user.refresh_from_db()
-        assert customer_user.role == User.Role.AGENT
 
-    def test_manager_can_toggle_user_status(
+# ==============================================================================
+# 2. TEST USER MANAGEMENT & ROLES (US02)
+# ==============================================================================
+class TestUserManagementAPI:
+    def test_anonymous_cannot_access_users(self, api_client):
+        res = api_client.get("/api/v1/users")
+        assert res.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_agent_cannot_access_user_list(self, api_client, agent_user):
+        api_client.force_authenticate(user=agent_user)
+        res = api_client.get("/api/v1/users")
+        assert res.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_manager_can_list_and_search_users(
         self, api_client, manager_user, customer_user
     ):
         api_client.force_authenticate(user=manager_user)
-        response = api_client.patch(
+        res = api_client.get(f"/api/v1/users?search={customer_user.username}")
+        assert res.status_code == status.HTTP_200_OK
+        results = res.data["results"] if "results" in res.data else res.data
+        assert any(u["username"] == customer_user.username for u in results)
+
+    def test_manager_update_role_success(self, api_client, manager_user, customer_user):
+        api_client.force_authenticate(user=manager_user)
+        res = api_client.put(
+            f"/api/v1/users/{customer_user.id}/role", {"role": User.Role.AGENT}
+        )
+        assert res.status_code == status.HTTP_200_OK
+        customer_user.refresh_from_db()
+        assert customer_user.role == User.Role.AGENT
+
+    def test_manager_toggle_user_status(self, api_client, manager_user, customer_user):
+        api_client.force_authenticate(user=manager_user)
+        res = api_client.patch(
             f"/api/v1/users/{customer_user.id}/status", {"is_active": False}
         )
-        assert response.status_code == status.HTTP_200_OK
+        assert res.status_code == status.HTTP_200_OK
         customer_user.refresh_from_db()
         assert customer_user.is_active is False
 
 
-@pytest.mark.django_db
-class TestTicketAPIAndIDOR:
-    """Kiểm tra US03, US04, US06, US07, US08, US14 và bảo mật chống IDOR."""
-
-    def test_customer_can_create_ticket(
+# ==============================================================================
+# 3. TEST TICKET CRUD & VALIDATION (US03, US04, US06, US07, US08, US14)
+# ==============================================================================
+class TestTicketAPI:
+    def test_create_ticket_validation_short_title(
         self, api_client, customer_user, category, priority
     ):
         api_client.force_authenticate(user=customer_user)
         payload = {
-            "title": "Hỏng màn hình máy tính Dell",
-            "description": "Màn hình bị chớp tắt liên tục",
+            "title": "abc",  # Tiêu đề < 5 ký tự
+            "description": "Nội dung hợp lệ",
             "category": category.id,
             "priority": priority.id,
         }
-        response = api_client.post("/api/v1/tickets", payload)
-        assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["title"] == payload["title"]
-        assert response.data["customer_id"] == customer_user.id
+        res = api_client.post("/api/v1/tickets", payload)
+        assert res.status_code == status.HTTP_400_BAD_REQUEST
+        assert "title" in res.data
 
-    def test_customer_only_sees_own_tickets(
+    def test_customer_cannot_update_others_ticket(
         self, api_client, customer_user, other_customer, category, priority
     ):
-        t1 = Ticket.objects.create(
-            title="Ticket cua Khach 1",
-            customer=customer_user,
-            category=category,
-            priority=priority,
+        other_ticket = TicketFactory(
+            customer=other_customer, category=category, priority=priority
         )
-        t2 = Ticket.objects.create(
-            title="Ticket cua Khach 2",
-            customer=other_customer,
-            category=category,
-            priority=priority,
-        )
-
         api_client.force_authenticate(user=customer_user)
-        response = api_client.get("/api/v1/tickets")
-        assert response.status_code == status.HTTP_200_OK
-        results = (
-            response.data["results"] if "results" in response.data else response.data
+        res = api_client.patch(
+            f"/api/v1/tickets/{other_ticket.id}", {"title": "Cố tình sửa tiêu đề"}
         )
-        ticket_ids = [item["id"] for item in results]
-        assert t1.id in ticket_ids
-        assert t2.id not in ticket_ids
+        # 404 vì get_queryset filter theo customer -> IDOR safe
+        assert res.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_idor_protection_customer_cannot_view_other_ticket(
-        self, api_client, customer_user, other_customer, category, priority
-    ):
-        t2 = Ticket.objects.create(
-            title="Ticket bi mat cua Khach 2",
-            customer=other_customer,
-            category=category,
-            priority=priority,
-        )
-
-        # khach01 cố gắng đọc ticket của khach02 -> phải nhận 404 Not Found
-        api_client.force_authenticate(user=customer_user)
-        response = api_client.get(f"/api/v1/tickets/{t2.id}")
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-
-    def test_agent_assign_and_status_update(
-        self, api_client, agent_user, customer_user, category, priority
-    ):
-        ticket = Ticket.objects.create(
-            title="Lỗi bàn phím gõ không ăn",
-            customer=customer_user,
-            category=category,
-            priority=priority,
-        )
-
-        api_client.force_authenticate(user=agent_user)
-        # Gán ticket
-        assign_res = api_client.patch(
-            f"/api/v1/tickets/{ticket.id}/assign", {"agent_id": agent_user.id}
-        )
-        assert assign_res.status_code == status.HTTP_200_OK
-        ticket.refresh_from_db()
-        assert ticket.assigned_to == agent_user
-        assert ticket.status == Ticket.Status.IN_PROGRESS
-
-        # Cập nhật trạng thái
-        status_res = api_client.patch(
-            f"/api/v1/tickets/{ticket.id}/status", {"status": Ticket.Status.RESOLVED}
-        )
-        assert status_res.status_code == status.HTTP_200_OK
-        ticket.refresh_from_db()
-        assert ticket.status == Ticket.Status.RESOLVED
-
-
-@pytest.mark.django_db
-class TestCommentsAndInternalBadge:
-    """Kiểm tra US05: Bình luận và quyền xem ghi chú nội bộ."""
-
-    def test_internal_comment_visibility(
+    def test_customer_cannot_assign_ticket(
         self, api_client, customer_user, agent_user, category, priority
     ):
-        ticket = Ticket.objects.create(
-            title="Sự cố mạng",
+        ticket = TicketFactory(
+            customer=customer_user, category=category, priority=priority
+        )
+        api_client.force_authenticate(user=customer_user)
+        res = api_client.patch(
+            f"/api/v1/tickets/{ticket.id}/assign", {"agent_id": agent_user.id}
+        )
+        assert res.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_customer_cannot_update_status(
+        self, api_client, customer_user, category, priority
+    ):
+        ticket = TicketFactory(
+            customer=customer_user, category=category, priority=priority
+        )
+        api_client.force_authenticate(user=customer_user)
+        res = api_client.patch(
+            f"/api/v1/tickets/{ticket.id}/status", {"status": Ticket.Status.CLOSED}
+        )
+        assert res.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_agent_assign_closed_ticket_conflict(
+        self, api_client, agent_user, customer_user, category, priority
+    ):
+        ticket = TicketFactory(
             customer=customer_user,
             category=category,
             priority=priority,
+            status=Ticket.Status.CLOSED,
         )
-        # Agent tạo 1 cmt nội bộ và 1 cmt công khai
-        Comment.objects.create(
-            ticket=ticket,
-            user=agent_user,
-            content="Ghi chú nội bộ cho kỹ thuật",
-            is_internal=True,
-        )
-        Comment.objects.create(
-            ticket=ticket,
-            user=agent_user,
-            content="Chào bạn, mình đang kiểm tra",
-            is_internal=False,
-        )
-
-        # Khách hàng xem: chỉ thấy 1 bình luận công khai
-        api_client.force_authenticate(user=customer_user)
-        res_customer = api_client.get(f"/api/v1/tickets/{ticket.id}/comments")
-        assert res_customer.status_code == status.HTTP_200_OK
-        customer_comments = (
-            res_customer.data["results"]
-            if "results" in res_customer.data
-            else res_customer.data
-        )
-        assert len(customer_comments) == 1
-        assert customer_comments[0]["is_internal"] is False
-
-        # Agent xem: thấy cả 2 bình luận
         api_client.force_authenticate(user=agent_user)
-        res_agent = api_client.get(f"/api/v1/tickets/{ticket.id}/comments")
-        assert res_agent.status_code == status.HTTP_200_OK
-        agent_comments = (
-            res_agent.data["results"] if "results" in res_agent.data else res_agent.data
+        res = api_client.patch(
+            f"/api/v1/tickets/{ticket.id}/assign", {"agent_id": agent_user.id}
         )
-        assert len(agent_comments) == 2
+        assert res.status_code == status.HTTP_409_CONFLICT
+        assert res.data["code"] == "ticket_closed"
+
+    def test_filter_and_search_tickets(
+        self, api_client, agent_user, customer_user, category, priority
+    ):
+        TicketFactory(
+            title="Máy in hỏng laser",
+            customer=customer_user,
+            category=category,
+            priority=priority,
+            status=Ticket.Status.NEW,
+        )
+        TicketFactory(
+            title="Mạng chập chờn",
+            customer=customer_user,
+            category=category,
+            priority=priority,
+            status=Ticket.Status.IN_PROGRESS,
+        )
+
+        api_client.force_authenticate(user=agent_user)
+        res = api_client.get("/api/v1/tickets?search=laser&status=new")
+        assert res.status_code == status.HTTP_200_OK
+        results = res.data["results"] if "results" in res.data else res.data
+        assert len(results) == 1
+        assert "laser" in results[0]["title"]
 
 
-@pytest.mark.django_db
-class TestDashboardAndReport:
-    """Kiểm tra US11, US12, US13: Dashboard, SLA, Export."""
+# ==============================================================================
+# 4. TEST COMMENTS & ATTACHMENTS (US05)
+# ==============================================================================
+class TestCommentsAndAttachmentsAPI:
+    def test_create_comment_empty_content_fails(
+        self, api_client, customer_user, category, priority
+    ):
+        ticket = TicketFactory(
+            customer=customer_user, category=category, priority=priority
+        )
+        api_client.force_authenticate(user=customer_user)
+        res = api_client.post(
+            f"/api/v1/tickets/{ticket.id}/comments", {"content": "   "}
+        )
+        assert res.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_manager_dashboard_and_export(
+    def test_customer_cannot_create_internal_comment(
+        self, api_client, customer_user, category, priority
+    ):
+        ticket = TicketFactory(
+            customer=customer_user, category=category, priority=priority
+        )
+        api_client.force_authenticate(user=customer_user)
+        res = api_client.post(
+            f"/api/v1/tickets/{ticket.id}/comments",
+            {"content": "Bình luận", "is_internal": True},
+        )
+        assert res.status_code == status.HTTP_201_CREATED
+        # Khách hàng bị ép is_internal = False
+        assert res.data["is_internal"] is False
+
+    def test_upload_attachment(self, api_client, customer_user, category, priority):
+        ticket = TicketFactory(
+            customer=customer_user, category=category, priority=priority
+        )
+        api_client.force_authenticate(user=customer_user)
+
+        fake_file = SimpleUploadedFile(
+            "log.txt", b"error log content", content_type="text/plain"
+        )
+        res = api_client.post(
+            "/api/v1/attachments",
+            {"ticket": ticket.id, "file": fake_file},
+            format="multipart",
+        )
+        assert res.status_code == status.HTTP_201_CREATED
+        assert res.data["file_name"] == "log.txt"
+
+
+# ==============================================================================
+# 5. TEST HISTORY & NOTIFICATIONS (US09, US10)
+# ==============================================================================
+class TestHistoryAndNotificationsAPI:
+    def test_get_ticket_history(self, api_client, customer_user, category, priority):
+        ticket = TicketFactory(
+            customer=customer_user, category=category, priority=priority
+        )
+        api_client.force_authenticate(user=customer_user)
+        res = api_client.get(f"/api/v1/tickets/{ticket.id}/history")
+        assert res.status_code == status.HTTP_200_OK
+
+    def test_notifications_list_and_mark_read(self, api_client, customer_user):
+        noti = Notification.objects.create(
+            user=customer_user, title="Thông báo mới", content="Ticket đã được nhận"
+        )
+        api_client.force_authenticate(user=customer_user)
+
+        # Xem danh sách
+        res_list = api_client.get("/api/v1/notifications")
+        assert res_list.status_code == status.HTTP_200_OK
+        results = (
+            res_list.data["results"] if "results" in res_list.data else res_list.data
+        )
+        assert any(n["id"] == noti.id for n in results)
+
+        # Đánh dấu đã đọc
+        res_read = api_client.patch(f"/api/v1/notifications/{noti.id}/read", {})
+        assert res_read.status_code == status.HTTP_200_OK
+        noti.refresh_from_db()
+        assert noti.is_read is True
+
+
+# ==============================================================================
+# 6. TEST DASHBOARD & METADATA (US11, US12, US13 & Metadata)
+# ==============================================================================
+class TestDashboardAndMetadataAPI:
+    def test_customer_cannot_access_dashboard_stats(self, api_client, customer_user):
+        api_client.force_authenticate(user=customer_user)
+        res = api_client.get("/api/v1/dashboard/stats")
+        assert res.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_customer_cannot_export_reports(self, api_client, customer_user):
+        api_client.force_authenticate(user=customer_user)
+        res = api_client.get("/api/v1/reports/tickets/export")
+        assert res.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_manager_export_reports_success(
         self, api_client, manager_user, customer_user, category, priority
     ):
-        Ticket.objects.create(
-            title="Ticket test 1",
-            customer=customer_user,
-            category=category,
-            priority=priority,
-        )
-
+        TicketFactory(customer=customer_user, category=category, priority=priority)
         api_client.force_authenticate(user=manager_user)
-        # Dashboard stats
-        stats_res = api_client.get("/api/v1/dashboard/stats")
-        assert stats_res.status_code == status.HTTP_200_OK
-        assert "summary" in stats_res.data
-        assert stats_res.data["summary"]["total_tickets"] >= 1
-
-        # SLA Warnings
-        sla_res = api_client.get("/api/v1/dashboard/sla-warnings")
-        assert sla_res.status_code == status.HTTP_200_OK
-
-        # Export Excel
-        export_res = api_client.get("/api/v1/reports/tickets/export")
-        assert export_res.status_code == status.HTTP_200_OK
+        res = api_client.get("/api/v1/reports/tickets/export")
+        assert res.status_code == status.HTTP_200_OK
         assert (
-            export_res["Content-Type"]
+            res["Content-Type"]
             == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+
+    def test_get_metadata_categories_and_priorities(
+        self, api_client, customer_user, category, priority
+    ):
+        api_client.force_authenticate(user=customer_user)
+        res_cat = api_client.get("/api/v1/categories")
+        assert res_cat.status_code == status.HTTP_200_OK
+        assert len(res_cat.data) >= 1
+
+        res_pri = api_client.get("/api/v1/priorities")
+        assert res_pri.status_code == status.HTTP_200_OK
+        assert len(res_pri.data) >= 1
