@@ -10,6 +10,12 @@ class TicketClosedError(Exception):
     pass
 
 
+class InactiveUserError(Exception):
+    """Lỗi khi phân công cho tài khoản bị khóa."""
+
+    pass
+
+
 @transaction.atomic
 def assign_ticket(ticket_id: int, agent: User) -> Ticket:
     """
@@ -17,6 +23,9 @@ def assign_ticket(ticket_id: int, agent: User) -> Ticket:
     Sử dụng select_for_update() để khoá dòng dữ liệu trong PostgreSQL,
     tránh lỗi xung đột (Race Condition) khi 2 người cùng phân công một lúc.
     """
+    if not agent.is_active:
+        raise InactiveUserError("Không thể gán ticket cho tài khoản bị khóa.")
+
     ticket = Ticket.objects.select_for_update().get(pk=ticket_id)
     if ticket.status == Ticket.Status.CLOSED:
         raise TicketClosedError("Ticket đã đóng, không thể phân công lại.")
