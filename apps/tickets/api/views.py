@@ -141,6 +141,11 @@ class TicketViewSet(viewsets.ModelViewSet):
                 {"detail": str(exc), "code": "ticket_closed"},
                 status=status.HTTP_409_CONFLICT,
             )
+        except Exception as exc:
+            return Response(
+                {"detail": str(exc), "code": "invalid_assignment"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return Response(TicketSerializer(ticket).data, status=status.HTTP_200_OK)
 
     @action(
@@ -152,6 +157,15 @@ class TicketViewSet(viewsets.ModelViewSet):
     def status(self, request, pk=None):
         """PATCH /api/v1/tickets/{id}/status : Cập nhật trạng thái ticket."""
         ticket = self.get_object()
+        if ticket.status == Ticket.Status.CLOSED:
+            return Response(
+                {
+                    "detail": "Không thể thay đổi trạng thái của ticket đã đóng.",
+                    "code": "ticket_closed",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         new_status = serializer.validated_data["status"]
