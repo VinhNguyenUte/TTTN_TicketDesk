@@ -181,6 +181,13 @@ class TicketViewSet(viewsets.ModelViewSet):
             old_value=old_status,
             new_value=new_status,
         )
+
+        from django.db import transaction
+
+        from apps.tickets.tasks import notify_status_changed
+
+        transaction.on_commit(lambda: notify_status_changed.delay(ticket.pk))
+
         return Response(TicketSerializer(ticket).data, status=status.HTTP_200_OK)
 
 
@@ -365,6 +372,22 @@ class TicketExportExcelView(APIView):
         }
     )
     def get(self, request):
+        async_mode = request.query_params.get("async", "").lower() in ("true", "1")
+        if async_mode:
+            from apps.tickets.tasks import export_tickets_excel_task
+
+            user_email = (
+                request.user.email if request.user and request.user.email else None
+            )
+            task = export_tickets_excel_task.delay(user_email=user_email)
+            return Response(
+                {
+                    "detail": "Tác vụ xuất báo cáo Excel đang chạy nền.",
+                    "task_id": task.id,
+                },
+                status=status.HTTP_202_ACCEPTED,
+            )
+
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Tickets Report"
