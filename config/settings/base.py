@@ -1,5 +1,8 @@
+import os
 from datetime import timedelta
 from pathlib import Path
+
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 # Đi lên 3 cấp từ base.py để về thư mục gốc của project (nơi chứa manage.py)
@@ -130,4 +133,19 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
+}
+
+# Celery & Redis Settings
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_TASK_TIME_LIMIT = 60
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ENABLE_UTC = True
+
+CELERY_BEAT_SCHEDULE = {
+    "nhac-ticket-qua-han": {
+        "task": "apps.tickets.tasks.remind_overdue_tickets",
+        "schedule": crontab(hour=8, minute=0),  # 8 giờ sáng hàng ngày
+    },
 }

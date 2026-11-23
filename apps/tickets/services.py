@@ -22,6 +22,7 @@ def assign_ticket(ticket_id: int, agent: User) -> Ticket:
     Phân công ticket cho nhân viên hỗ trợ (Agent) an toàn trong giao dịch.
     Sử dụng select_for_update() để khoá dòng dữ liệu trong PostgreSQL,
     tránh lỗi xung đột (Race Condition) khi 2 người cùng phân công một lúc.
+    Đồng thời gọi tác vụ nền gửi email sau khi transaction commit thành công.
     """
     if not agent.is_active:
         raise InactiveUserError("Không thể gán ticket cho tài khoản bị khóa.")
@@ -33,4 +34,10 @@ def assign_ticket(ticket_id: int, agent: User) -> Ticket:
     ticket.assigned_to = agent
     ticket.status = Ticket.Status.IN_PROGRESS
     ticket.save(update_fields=["assigned_to", "status", "updated_at"])
+
+    # Gửi email thông báo qua Celery task khi transaction hoàn tất (on_commit)
+    from apps.tickets.tasks import notify_status_changed
+
+    transaction.on_commit(lambda: notify_status_changed.delay(ticket.pk))
+
     return ticket

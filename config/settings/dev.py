@@ -31,8 +31,15 @@ DATABASES = {
     }
 }
 
-# Email backend cho môi trường dev (in ra terminal)
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# Email backend cho môi trường dev (Mailpit hoặc in ra console)
+# Nếu Mailpit chạy ở localhost:1025 thì gửi qua SMTP, ngược lại fallback sang console
+EMAIL_BACKEND = os.getenv(
+    "EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend"
+)
+EMAIL_HOST = os.getenv("EMAIL_HOST", "localhost")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "1025"))
+EMAIL_USE_TLS = False
+DEFAULT_FROM_EMAIL = "noreply@ticketdesk.local"
 
 # Cấu hình django-debug-toolbar cho môi trường dev (chỉ kích hoạt khi đã cài đặt)
 try:
