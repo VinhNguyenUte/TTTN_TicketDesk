@@ -2,7 +2,7 @@ import io
 from datetime import timedelta
 
 import openpyxl
-from django.db.models import Count, Q
+from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -23,7 +23,12 @@ from apps.tickets.models import (
     Ticket,
     TicketHistory,
 )
-from apps.tickets.services import TicketClosedError, assign_ticket
+from apps.tickets.services import (
+    TicketClosedError,
+    assign_ticket,
+    get_cached_dashboard_stats,
+    invalidate_dashboard_stats,
+)
 
 from .permissions import (
     CanAssignTicket,
@@ -97,6 +102,7 @@ class TicketViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         ticket = serializer.save(customer=self.request.user)
+        invalidate_dashboard_stats()
         TicketHistory.objects.create(
             ticket=ticket,
             user=self.request.user,
@@ -173,6 +179,7 @@ class TicketViewSet(viewsets.ModelViewSet):
         old_status = ticket.status
         ticket.status = new_status
         ticket.save()
+        invalidate_dashboard_stats()
 
         TicketHistory.objects.create(
             ticket=ticket,
@@ -276,61 +283,8 @@ class DashboardStatsView(generics.GenericAPIView):
     serializer_class = DashboardStatsSerializer
 
     def get(self, request):
-        status_counts_raw = Ticket.objects.values("status").annotate(total=Count("id"))
-        status_dict = {item["status"]: item["total"] for item in status_counts_raw}
-
-        status_breakdown = [
-            {
-                "status": choice_val,
-                "label": choice_label,
-                "count": status_dict.get(choice_val, 0),
-            }
-            for choice_val, choice_label in Ticket.Status.choices
-        ]
-
-        summary = Ticket.objects.aggregate(
-            total_tickets=Count("id"),
-            open_tickets=Count("id", filter=~Q(status=Ticket.Status.CLOSED)),
-            resolved_tickets=Count(
-                "id",
-                filter=Q(status__in=[Ticket.Status.RESOLVED, Ticket.Status.CLOSED]),
-            ),
-        )
-        total = summary["total_tickets"] or 0
-        resolved = summary["resolved_tickets"] or 0
-        resolution_rate = round((resolved / total * 100), 1) if total > 0 else 0
-
-        # Thống kê agent
-        agents_data = []
-        agents = User.objects.filter(role=User.Role.AGENT).annotate(
-            total_assigned=Count("assigned_tickets"),
-            open_count=Count(
-                "assigned_tickets",
-                filter=~Q(assigned_tickets__status=Ticket.Status.CLOSED),
-            ),
-        )
-        for ag in agents:
-            agents_data.append(
-                {
-                    "id": ag.id,
-                    "username": ag.username,
-                    "total_assigned": ag.total_assigned,
-                    "open_count": ag.open_count,
-                }
-            )
-
-        return Response(
-            {
-                "summary": {
-                    "total_tickets": total,
-                    "open_tickets": summary["open_tickets"] or 0,
-                    "resolved_tickets": resolved,
-                    "resolution_rate": f"{resolution_rate}%",
-                },
-                "status_breakdown": status_breakdown,
-                "agent_performance": agents_data,
-            }
-        )
+        data = get_cached_dashboard_stats()
+        return Response(data)
 
 
 class SLAWarningsView(generics.ListAPIView):

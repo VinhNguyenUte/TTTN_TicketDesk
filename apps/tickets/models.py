@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.utils import timezone
 
@@ -186,7 +187,11 @@ class Attachment(models.Model):
         related_name="uploaded_attachments",
         verbose_name="Người tải lên",
     )
-    file = models.FileField("Tệp đính kèm", upload_to="attachments/%Y/%m/")
+    file = models.FileField(
+        "Tệp đính kèm",
+        upload_to="attachments/%Y/%m/",
+        validators=[FileExtensionValidator(["png", "jpg", "jpeg", "pdf", "docx"])],
+    )
     file_name = models.CharField("Tên tệp", max_length=255, blank=True)
     file_size = models.PositiveIntegerField("Kích thước file (bytes)", default=0)
     created_at = models.DateTimeField("Ngày tải lên", auto_now_add=True)
