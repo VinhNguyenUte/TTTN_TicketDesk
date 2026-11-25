@@ -82,16 +82,38 @@ class Command(BaseCommand):
 
         for i in range(1, count + 1):
             status = random.choice(statuses)
-            created_offset = random.randint(0, 30)  # tạo trong vòng 30 ngày qua
-            created_at = now - timedelta(
-                days=created_offset, hours=random.randint(0, 23)
-            )
-            due_date = created_at + timedelta(days=random.randint(1, 5))
-            resolved_at = (
-                created_at + timedelta(hours=random.randint(2, 48))
-                if status in [Ticket.Status.RESOLVED, Ticket.Status.CLOSED]
-                else None
-            )
+
+            if status in [Ticket.Status.RESOLVED, Ticket.Status.CLOSED]:
+                # Ticket đã xong: tạo trong quá khứ 5 - 30 ngày trước, hoàn thành trước hạn hoặc sau hạn hợp lý
+                created_offset_days = random.randint(5, 30)
+                created_at = now - timedelta(
+                    days=created_offset_days, hours=random.randint(0, 23)
+                )
+                due_date = created_at + timedelta(days=random.randint(2, 5))
+                # 85% hoàn thành đúng hạn (resolved_at <= due_date), 15% trễ hạn
+                if random.random() < 0.85:
+                    resolved_at = created_at + timedelta(hours=random.randint(4, 36))
+                else:
+                    resolved_at = due_date + timedelta(hours=random.randint(2, 24))
+            else:
+                # Ticket đang mở (NEW / IN_PROGRESS):
+                # Phân bổ thực tế: 70% còn hạn SLA trong tương lai, 15% sắp hết hạn (trong 24h tới), 15% đã quá hạn
+                rand_val = random.random()
+                if rand_val < 0.70:
+                    # Còn hạn: tạo gần đây (vài giờ đến 2 ngày trước), hạn SLA còn 1 - 4 ngày tới
+                    created_at = now - timedelta(hours=random.randint(1, 48))
+                    due_date = now + timedelta(
+                        days=random.randint(1, 4), hours=random.randint(1, 12)
+                    )
+                elif rand_val < 0.85:
+                    # Sắp hết hạn (cảnh báo SLA 24h): hạn trong vòng 2 - 24 giờ tới
+                    created_at = now - timedelta(hours=random.randint(12, 36))
+                    due_date = now + timedelta(hours=random.randint(2, 23))
+                else:
+                    # Đã quá hạn SLA: hạn đã qua từ 1 - 48 giờ trước
+                    created_at = now - timedelta(days=random.randint(2, 5))
+                    due_date = now - timedelta(hours=random.randint(1, 48))
+                resolved_at = None
 
             title = f"{random.choice(sample_titles)} #{i}"
             ticket = Ticket(
@@ -104,6 +126,8 @@ class Command(BaseCommand):
                 priority=random.choice(priorities),
                 due_date=due_date,
                 resolved_at=resolved_at,
+                created_at=created_at,
+                updated_at=resolved_at or created_at,
             )
             tickets_to_create.append(ticket)
 
@@ -114,6 +138,32 @@ class Command(BaseCommand):
 
         if tickets_to_create:
             Ticket.objects.bulk_create(tickets_to_create, batch_size=batch_size)
+
+        # Cập nhật created_at và updated_at qua SQL vì auto_now_add bỏ qua giá trị Python gán khi bulk_create
+        from django.db import connection
+
+        with connection.cursor() as cursor:
+            # 1. Với ticket đã giải quyết: created_at phải diễn ra trước resolved_at
+            cursor.execute(
+                """
+                UPDATE tickets_ticket
+                SET created_at = resolved_at - INTERVAL '1 day' * (1 + (id % 4)),
+                    updated_at = resolved_at
+                WHERE resolved_at IS NOT NULL;
+                """
+            )
+            # 2. Với ticket đang mở: created_at diễn ra trước hạn SLA và trước hiện tại
+            cursor.execute(
+                """
+                UPDATE tickets_ticket
+                SET created_at = CASE
+                    WHEN due_date > NOW() THEN NOW() - INTERVAL '1 hour' * (2 + (id % 36))
+                    ELSE due_date - INTERVAL '1 day' * (1 + (id % 3))
+                END,
+                updated_at = NOW()
+                WHERE resolved_at IS NULL;
+                """
+            )
 
         self.stdout.write(
             self.style.SUCCESS(f"Hoàn thành! Đã tạo thành công {count:,} ticket.")
